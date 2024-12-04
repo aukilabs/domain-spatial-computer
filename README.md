@@ -1,6 +1,6 @@
 # domain-spatial-computer
 
-##setup
+## setup
 1. install deno
 https://docs.deno.com/runtime/getting_started/installation/
 
@@ -17,8 +17,8 @@ https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno
 
 2. Cmd+Shift+P -> Deno: Initialize Workspace Configuration
 
-##contributing
-1 endpoints go in routes folder and try to match folder structure
+## contributing
+1. endpoints go in routes folder and try to match folder structure
 1.1 add route to ./main.router.ts
 
 2. type defs happen locally, shared types put in ./types

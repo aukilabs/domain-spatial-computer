@@ -22,7 +22,7 @@ const setAsCanonical = async (ctx: Context): Promise<void> => {
     } catch (error) {
       ctx.response.status = 400;
       //@ts-expect-error check for .message on unknown
-      ctx.response.body = { message: error.message ?? "Unknown error" };
+      ctx.response.body = { message: error.message ?? error };
       return;
     }
 
@@ -68,10 +68,11 @@ const setAsCanonical = async (ctx: Context): Promise<void> => {
 
     //bail out of there was an error deleting portals in the domain
     if (deletePortalsResponse.status !== 200) {
-      ctx.response.status = deletePortalsResponse.status;
       ctx.response.body = {
         message: "failed to delete portals",
       };
+      ctx.response.status = deletePortalsResponse.status;
+      return;
     }
 
     for (const portal of refinementManifest.portals) {
@@ -145,7 +146,9 @@ const setAsCanonical = async (ctx: Context): Promise<void> => {
       data: JSON.stringify(domainMetaData),
     });
 
-    console.log("updateResponse", updateResponse.status);
+    if (updateResponse.status !== 200) {
+      console.log("error updating canonical data");
+    }
 
     ctx.response.status = 200;
     ctx.response.body = { message: "Success" };
@@ -155,7 +158,7 @@ const setAsCanonical = async (ctx: Context): Promise<void> => {
     ctx.response.body = {
       message: "Something went wrong.",
       //@ts-expect-error check for .message on unknown
-      error: error.message || error,
+      error: error.message ?? error,
     };
   }
 };

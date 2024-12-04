@@ -1,12 +1,12 @@
 import { Context } from "jsr:@oak/oak/context";
-import { DomainRequest } from "../../types/domainrequest.ts";
+import { DomainRequestBody } from "../../types/domainRequestBody.ts";
 import { fetchDomainDataByNameAndType } from "../../utils/fetchDomainData.ts";
 import { updateDomainData } from "../../utils/uploadDomainData.ts";
 
 const setAsCanonical = async (ctx: Context): Promise<void> => {
   try {
     //parse the request body
-    const body: DomainRequest & { refinementId?: string } =
+    const body: DomainRequestBody & { refinementId?: string } =
       await ctx.request.body.json();
     const { domainServerUrl, domainId, refinementId } = body;
     //get auth header

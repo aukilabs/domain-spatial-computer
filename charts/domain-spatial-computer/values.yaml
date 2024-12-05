@@ -23,6 +23,6 @@ k8s-service:
     servicePort: "app"
   containerResources:
     limits:
-      memory: 32Mi
+      memory: 192Mi
     requests:
-      memory: 32Mi
+      memory: 192Mi

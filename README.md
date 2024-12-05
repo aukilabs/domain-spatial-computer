@@ -11,7 +11,11 @@ https://docs.deno.com/runtime/getting_started/installation/
 3. run the following command to serve:
 deno --allow-read --allow-env --allow-net src/main.ts
 
-### FOR VSCODE:
+### for docker 
+docker compose -f docker-compose.yml build
+docker compose up
+
+### for vscode:
 1. install deno extension
 https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno
 

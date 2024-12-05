@@ -1,4 +1,3 @@
-import env from "../config.ts";
 import { Application } from "jsr:@oak/oak/application";
 import router from "./mainRouter.ts";
 import { oakCors } from "https://deno.land/x/cors/mod.ts";
@@ -9,6 +8,6 @@ app.use(oakCors({ origin: "*", optionsSuccessStatus: 200 }));
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-console.log("server running on port", env.PORT);
+console.log("server running on port 8000");
 
-await app.listen({ port: Number(env.PORT) });
+await app.listen({ port: 8000 });

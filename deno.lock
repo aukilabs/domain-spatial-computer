@@ -17,6 +17,7 @@
     "jsr:@std/path@1": "1.0.8",
     "npm:@types/node@*": "22.5.4",
     "npm:@types/three@*": "0.170.0",
+    "npm:obj-file-parser@*": "0.6.2",
     "npm:path-to-regexp@6.2.1": "6.2.1",
     "npm:three@*": "0.171.0"
   },
@@ -121,6 +122,9 @@
     },
     "meshoptimizer@0.18.1": {
       "integrity": "sha512-ZhoIoL7TNV4s5B6+rx5mC//fw8/POGyNxS/DZyCJeiZ12ScLfVwRE/GfsxwiTkMYYD5DmK2/JXnEVXqL4rF+Sw=="
+    },
+    "obj-file-parser@0.6.2": {
+      "integrity": "sha512-eATpidA23O619wNjAcrve3WkNQ0vSTLiPSR8DLjPXrguD1DsN0/S49EMAI1T3wzhUD0aLGIiAZXLnWjORGOlng=="
     },
     "path-to-regexp@6.2.1": {
       "integrity": "sha512-JLyh7xT1kizaEvcaXOQwOc2/Yhw6KZOvPf1S8401UyLk86CU79LN3vl7ztXGm/pZ+YjoyAJ4rxmHwbkBXJX+yw=="

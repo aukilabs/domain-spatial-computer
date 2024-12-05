@@ -1,5 +1,5 @@
 import { Router } from "jsr:@oak/oak/router";
-import setAsCanonical from "./routes/dmt/setAsCanonical.ts";
+import setAsCanonical from "./routes/domain/setAsCanonical.ts";
 
 const router = new Router();
 
@@ -8,6 +8,6 @@ router.get("/ping", ({ response }) => {
   response.status = 200;
 });
 
-router.post("/dmt/canonical", setAsCanonical);
+router.post("/domain/setcanonrefinement", setAsCanonical);
 
 export default router;

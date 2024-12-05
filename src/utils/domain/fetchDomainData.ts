@@ -33,10 +33,11 @@ export async function fetchDomainDataByNameAndType({
     }
   );
 
-  const metadata = (await metadataResponse.json()) as { data: Metadata[] };
+  const metadataList = (await metadataResponse.json()) as { data: Metadata[] };
+  const metadata = metadataList.data[0];
 
   const fetchResponse = await fetch(
-    `${domainServerUrl}/api/v1/domains/${domainId}/data/${metadata.data[0].id}?raw=1`,
+    `${domainServerUrl}/api/v1/domains/${domainId}/data/${metadata.id}?raw=1`,
     {
       method: "GET",
       headers: {

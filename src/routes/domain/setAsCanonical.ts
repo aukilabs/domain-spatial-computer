@@ -1,7 +1,13 @@
 import { Context } from "jsr:@oak/oak/context";
 import { DomainRequestBody } from "../../types/domainRequestBody.ts";
-import { fetchDomainDataByNameAndType } from "../../utils/fetchDomainData.ts";
-import { updateDomainData } from "../../utils/uploadDomainData.ts";
+import { fetchDomainDataByNameAndType } from "../../utils/domain/fetchDomainData.ts";
+import { updateDomainData } from "../../utils/domain/uploadDomainData.ts";
+// @deno-types="npm:@types/three"
+import * as THREE from "npm:three";
+import {
+  ApplyRelativeMatrixToPose,
+  GetRelativeMatrix,
+} from "../../utils/math/matrixMath.ts";
 
 const setAsCanonical = async (ctx: Context): Promise<void> => {
   try {
@@ -48,14 +54,91 @@ const setAsCanonical = async (ctx: Context): Promise<void> => {
       return;
     }
 
-    // const getExistingPortalsResponse = await fetch(
-    //   `${domainServerUrl}/api/v1/domains/${domainId}/lighthouses`,
-    //   { METHOD: "GET", headers: { Authorization: authorization } }
-    // );
+    const getExistingPortalsResponse = await fetch(
+      `${domainServerUrl}/api/v1/domains/${domainId}/lighthouses`,
+      {
+        METHOD: "GET",
+        headers: {
+          Authorization: authorization,
+          "Accept-Encoding": "application/json",
+        },
+      }
+    );
 
-    // const existingPortals = await getExistingPortalsResponse.json();
+    console.log(getExistingPortalsResponse.status);
+    console.log(getExistingPortalsResponse.statusText);
 
-    //console.log(JSON.stringify(existingPortals));
+    const existingPortals = await getExistingPortalsResponse.json();
+
+    //get origin or closest thing to an origin
+    let closestId: string | undefined = undefined;
+    let closestDistance = Number.MAX_VALUE;
+    console.log("existingPortals.poses.length", existingPortals.poses.length);
+    for (let i = 0; i < existingPortals.poses.length; i++) {
+      const data = existingPortals.poses[i];
+      console.log(i, data);
+      const x = data.px;
+      const y = data.py;
+      const z = data.pz;
+      if (x === undefined || y === undefined || z === undefined) continue;
+      const distanceSq = x * x * y * y * z * z;
+      if (distanceSq < closestDistance) {
+        closestDistance = distanceSq;
+        closestId = data.short_id;
+      }
+    }
+
+    console.log(closestId, closestDistance);
+
+    //align refinement to the existing origin portal
+    let refinementPortals = refinementManifest.portals ?? [];
+    let relativeMatrix: THREE.Matrix4 | undefined = undefined;
+    if (closestId) {
+      const originPortal = existingPortals.poses.find(
+        (x) => x.short_id == closestId
+      );
+      const refinementPortal = refinementManifest?.portals.find(
+        (x) => x.shortId == closestId
+      );
+
+      if (originPortal && refinementPortal) {
+        relativeMatrix = GetRelativeMatrix(
+          {
+            position: {
+              x: originPortal.px!,
+              y: originPortal.py!,
+              z: originPortal.pz!,
+            },
+            rotation: {
+              x: originPortal.rx!,
+              y: originPortal.ry!,
+              z: originPortal.rz!,
+              w: originPortal.rw!,
+            },
+          },
+          refinementPortal.averagePose
+        );
+
+        console.log(
+          "closest",
+          closestId,
+          originPortal,
+          refinementPortal.averagePose,
+          relativeMatrix
+        );
+
+        refinementPortals = refinementPortals.map((x) => {
+          const pose = ApplyRelativeMatrixToPose(relativeMatrix!, x.pose);
+          const averagePose = ApplyRelativeMatrixToPose(
+            relativeMatrix!,
+            x.averagePose
+          );
+          return { ...x, pose, averagePose };
+        });
+      }
+    }
+
+    console.log("deleting portals");
 
     //delete all portal poses in the domain
     const deletePortalsResponse = await fetch(
@@ -75,7 +158,9 @@ const setAsCanonical = async (ctx: Context): Promise<void> => {
       return;
     }
 
-    for (const portal of refinementManifest.portals) {
+    console.log("placing portals");
+    for (const portal of refinementPortals) {
+      console.log("placing portals" + portal.shortId);
       const placeResponse = await fetch(
         `${domainServerUrl}/api/v1/domains/${domainId}/lighthouses/${portal.shortId}`,
         {
@@ -86,11 +171,6 @@ const setAsCanonical = async (ctx: Context): Promise<void> => {
           },
           body: JSON.stringify({
             pose: {
-              altitude: 0,
-              gps_timestamp: 0,
-              horizontal_accuracy: 0,
-              latitude: 0,
-              longitude: 0,
               px: portal.averagePose.position.x,
               py: portal.averagePose.position.y,
               pz: portal.averagePose.position.z,
@@ -98,27 +178,28 @@ const setAsCanonical = async (ctx: Context): Promise<void> => {
               ry: portal.averagePose.rotation.y,
               rz: portal.averagePose.rotation.z,
               rw: portal.averagePose.rotation.w,
-              scanner_device_id: "none",
-              scanner_device_model: "none",
-              scanner_device_name: "none",
-              vertical_accuracy: 0,
+              scanner_device_id: "unknown",
+              scanner_device_name: "unknown",
+              scanner_device_model: "unknown",
             },
           }),
         }
       );
 
+      console.log(placeResponse.status);
+      const placeresponse = await placeResponse.text();
       if (placeResponse.status !== 200) {
         console.log("error placing portal");
         console.log(placeResponse.status);
         ctx.response.status = placeResponse.status;
         ctx.response.body = {
-          message: await placeResponse.text(),
+          message: placeresponse,
         };
         return;
       }
     }
 
-    let domainMetaData: { [key: string]: any } = {};
+    let metadataObj: { [key: string]: any } = {};
     let domainMetadataId: string;
     try {
       const domainmetadataResponse = await fetchDomainDataByNameAndType({
@@ -129,21 +210,24 @@ const setAsCanonical = async (ctx: Context): Promise<void> => {
         dataType: "json",
       });
 
-      domainMetaData = JSON.parse(domainmetadataResponse.data);
-      domainMetadataId = domainmetadataResponse.metadata.data[0].id;
+      metadataObj = JSON.parse(domainmetadataResponse.data);
+      domainMetadataId = domainmetadataResponse.metadata.id;
     } catch (error) {
-      domainMetaData = {};
+      metadataObj = {};
     }
 
-    domainMetaData.canonicalRefinement = refinementId;
-    domainMetaData.test = (domainMetaData.test ?? 0) + 1;
+    metadataObj.canonicalRefinement = refinementId;
+    metadataObj.canonicalRefinementAlignmentMatrix = relativeMatrix?.toArray();
+    metadataObj.test = (metadataObj.test ?? 0) + 1;
+
+    console.log(metadataObj);
 
     const updateResponse = await updateDomainData({
       authorization,
       domainServerUrl,
       domainId,
       dataId: domainMetadataId!,
-      data: JSON.stringify(domainMetaData),
+      data: JSON.stringify(metadataObj),
     });
 
     if (updateResponse.status !== 200) {

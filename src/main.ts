@@ -1,6 +1,6 @@
 import env from "../config.ts";
 import { Application } from "jsr:@oak/oak/application";
-import router from "./main.router.ts";
+import router from "./mainRouter.ts";
 import { oakCors } from "https://deno.land/x/cors/mod.ts";
 
 const app = new Application();

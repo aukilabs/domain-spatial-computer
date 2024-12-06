@@ -1,0 +1,28 @@
+k8s-service:
+  containerImage:
+    repository: 026987513085.dkr.ecr.us-east-1.amazonaws.com/domain-spatial-computer
+    tag: latest
+    pullPolicy: Always
+  applicationName: domain-spatial-computer
+  containerPorts:
+    http:
+      port: 8000
+      protocol: TCP
+  shutdownDelay: 5
+  replicaCount: 1
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: alb
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/group.name: default
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    path: "/"
+    pathType: "Prefix"
+    servicePort: "app"
+  containerResources:
+    limits:
+      memory: 192Mi
+    requests:
+      memory: 192Mi

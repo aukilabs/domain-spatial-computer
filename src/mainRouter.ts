@@ -2,6 +2,7 @@ import { Router } from "jsr:@oak/oak/router";
 import setAsCanonical from "./routes/domain/setAsCanonical.ts";
 import raycast from "./routes/spatial/raycast.ts";
 import pathFind from "./routes/spatial/pathfind.ts";
+import crossSection from "./routes/spatial/crossSection.ts";
 
 const router = new Router();
 
@@ -13,5 +14,6 @@ router.get("/ping", ({ response }) => {
 router.post("/domain/setcanonrefinement", setAsCanonical);
 router.post("/spatial/pathfind", pathFind);
 router.post("/spatial/raycast", raycast);
+router.post("/spatial/crosssection", crossSection);
 
 export default router;

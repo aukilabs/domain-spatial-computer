@@ -8,12 +8,13 @@ import { FlatPose, Pose } from "../../types/mathTypes.ts";
 import { SetGeometryFromOBJ } from "../../utils/math/geometry.ts";
 
 const raycast = async (ctx: Context): Promise<void> => {
-  console.log("hello world");
+  console.log("start raycast");
 
   try {
     //parse the request body
-    const body: DomainRequestBody & { ray?: Pose | FlatPose } =
-      await ctx.request.body.json();
+    const body: DomainRequestBody & {
+      ray?: Pose | FlatPose | number[] | number[][];
+    } = await ctx.request.body.json();
     const { domainServerUrl, domainId, ray } = body;
 
     //get auth header
@@ -34,7 +35,6 @@ const raycast = async (ctx: Context): Promise<void> => {
       return;
     }
 
-    console.log("hello world1");
     //call the domain data endpoint to get the refinement manifest
     let occlusion_obj;
     try {
@@ -46,8 +46,6 @@ const raycast = async (ctx: Context): Promise<void> => {
         dataType: "obj",
       });
 
-      console.log("hello world2");
-      console.log(occlusionResponse.data);
       //parse the refinement
       occlusion_obj = ParseOBJString(occlusionResponse.data);
     } catch (error) {
@@ -57,11 +55,19 @@ const raycast = async (ctx: Context): Promise<void> => {
       return;
     }
 
-    console.log("hello world3");
-
     const origin = new THREE.Vector3();
-    const direction = new THREE.Vector3(1, 0, 0);
-    if ("position" in ray) {
+    const direction = new THREE.Vector3(0, 0, 1);
+    if (ray instanceof Array) {
+      const rotation = new THREE.Quaternion();
+      const scale = new THREE.Vector3();
+      const flatRay = ray.flat();
+      const _matrix = new THREE.Matrix4()
+        .fromArray(flatRay)
+        .transpose()
+        .decompose(origin, rotation, scale);
+
+      direction.applyQuaternion(rotation).normalize();
+    } else if ("position" in ray) {
       origin.copy(ray.position);
       direction.applyQuaternion(ray.rotation).normalize();
     } else {
@@ -84,6 +90,8 @@ const raycast = async (ctx: Context): Promise<void> => {
       SetGeometryFromOBJ(obj, obj3d.geometry);
       return obj3d;
     });
+
+    console.log("loaded occlusion boxes #", occlusionBoxes.length);
 
     const result = raycaster.intersectObjects(occlusionBoxes, true);
 

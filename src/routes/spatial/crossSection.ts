@@ -6,7 +6,8 @@ import { SetGeometryFromOBJ } from "../../utils/math/geometry.ts";
 // @deno-types="npm:@types/three"
 import * as THREE from "npm:three";
 import * as BufferGeometryUtils from "npm:three/examples/jsm/utils/BufferGeometryUtils.js";
-import { MeshBVH, MeshBVHHelper, CONTAINED } from "npm:three-mesh-bvh";
+import { MeshBVH } from "npm:three-mesh-bvh";
+import { PNGImage } from "jsr:@ilawy/dpng";
 
 type CrossSectionRequest = {};
 
@@ -58,7 +59,7 @@ const crossSection = async (ctx: Context): Promise<void> => {
   });
 
   const mergedGeometry =
-    BufferGeometryUtils.mergeBufferGeometries(occlusionGeometries);
+    BufferGeometryUtils.mergeGeometries(occlusionGeometries);
 
   const colliderBvh = new MeshBVH(mergedGeometry, { maxLeafTris: 3 });
   mergedGeometry.boundsTree = colliderBvh;
@@ -180,8 +181,90 @@ const crossSection = async (ctx: Context): Promise<void> => {
     },
   });
 
-  ctx.response.body = `outlines length: ${index}`;
+  //outlineLines.geometry.setDrawRange(0, index);
+
+  outlineLines.geometry.computeBoundingBox();
+  const bounds = outlineLines.geometry.boundingBox;
+
+  const pixelSize = 0.005; //1 pixel per 5mm
+  const size = new THREE.Vector3().subVectors(bounds!.max, bounds!.min);
+  const offset = new THREE.Vector2(bounds!.min.x, bounds!.min.z);
+  const pngSize = new THREE.Vector2(
+    Math.ceil(size.x / pixelSize),
+    Math.ceil(size.z / pixelSize)
+  );
+
+  const png = new PNGImage(pngSize.x, pngSize.y, 10, {
+    r: 255,
+    g: 255,
+    b: 255,
+    a: 1,
+  });
+
+  for (let i = 0; i < index; i += 2) {
+    const pos3d = new THREE.Vector2(posAttr.getX(i), posAttr.getZ(i));
+    const pos3d2 = new THREE.Vector2(posAttr.getX(i + 1), posAttr.getZ(i + 1));
+
+    console.log(pos3d, pos3d2);
+    drawline(
+      new THREE.Vector2(pos3d.x, pos3d.y),
+      new THREE.Vector2(pos3d2.x, pos3d2.y),
+      offset,
+      pixelSize,
+      png
+    );
+  }
+
+  console.log("size", size);
+  console.log("pngSize", pngSize);
+
+  const yamlLines = [
+    "free_thresh: 0.196",
+    "negate:0",
+    "occupied_thresh:0.65",
+    "image: map.png",
+    "origin:",
+    `- ${offset.x.toFixed(2)}`,
+    `- ${offset.y.toFixed(2)}`,
+    "0",
+    `resolution: ${pixelSize.toString()}`,
+  ];
+
+  const yamlString = yamlLines.join("\n");
+
+  const formData = new FormData();
+  formData.append("png", png.getBase64(), "map.png");
+  formData.append("yaml", yamlString, "map.yaml");
+
+  ctx.response.body = formData;
   ctx.response.status = 200;
 };
+
+function drawline(
+  start: THREE.Vector2,
+  end: THREE.Vector2,
+  offset: THREE.Vector2,
+  pixelSize: number,
+  png: PNGImage
+) {
+  const distance = start.distanceTo(end);
+  if (distance == 0) return;
+  //offset.divideScalar(pixelSize);
+  //console.log("offset", offset);
+  //console.log("start", start, end);
+  const startOffset = start.add(offset).divideScalar(pixelSize);
+  const endOffset = end.add(offset).divideScalar(pixelSize);
+
+  const color = png.createRGBColor({ r: 0, g: 0, b: 0, a: 1 });
+  //console.log("draw line ", startOffset, endOffset);
+  console.log("distance", distance);
+  for (let i = 0; i < distance; i += 0.1) {
+    const point = startOffset.lerp(endOffset, i / distance);
+    const x = Math.round(point.x);
+    const y = Math.round(point.y);
+    //console.log("point", x, y);
+    png.setPixel(x, y, color);
+  }
+}
 
 export default crossSection;

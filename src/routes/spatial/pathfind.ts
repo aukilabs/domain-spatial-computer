@@ -74,6 +74,8 @@ const pathFind = async (ctx: Context): Promise<void> => {
     walkableRadius: radius,
   });
 
+  console.log(navMesh?.raw.getNavMesh());
+
   if (!success || !navMesh) {
     ctx.response.body = { message: "failed to generate" };
     ctx.response.status = 500;

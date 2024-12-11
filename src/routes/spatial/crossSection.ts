@@ -19,6 +19,7 @@ type CrossSectionRequest = {
   xAxisColor?: string;
   yAxisColor?: string;
   originColor?: string;
+  buffer?: number;
 };
 
 const crossSection = async (ctx: Context): Promise<void> => {
@@ -50,6 +51,7 @@ const crossSection = async (ctx: Context): Promise<void> => {
   const originColor = body.originColor ? hex2rgb(body.originColor) : 0xffff00;
   const lineColor = body.lineColor ? hex2rgb(body.lineColor) : 0x000000;
   const lineThickness = body.lineThickness ?? 1;
+  const imgBuffer = body.buffer ?? 0;
 
   //call the domain data endpoint to get the refinement manifest
   let occlusion_obj;
@@ -177,11 +179,10 @@ const crossSection = async (ctx: Context): Promise<void> => {
     maxY = Math.max(maxY, o.bounds.min.z, o.bounds.max.z);
   });
 
-  const buffer = 0.2;
-  minX -= buffer;
-  minY -= buffer;
-  maxX += buffer;
-  maxY += buffer;
+  minX -= imgBuffer;
+  minY -= imgBuffer;
+  maxX += imgBuffer;
+  maxY += imgBuffer;
 
   const size = new THREE.Vector2(maxX - minX, maxY - minY);
   const offset = new THREE.Vector2(minX, minY);
@@ -235,10 +236,10 @@ const crossSection = async (ctx: Context): Promise<void> => {
     "occupied_thresh:0.65",
     "image: map.png",
     "origin:",
-    `- ${offset.x.toFixed(2)}`,
-    `- ${offset.y.toFixed(2)}`,
-    "0",
-    `resolution: ${ppm.toString()}`,
+    `- ${minX.toFixed(3)}`,
+    `- ${(-maxY).toFixed(3)}`,
+    "- 0",
+    `resolution: ${(1 / ppm).toString()}`,
   ];
 
   const yamlString = yamlLines.join("\n");

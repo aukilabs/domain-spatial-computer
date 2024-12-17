@@ -232,7 +232,7 @@ const crossSection = async (ctx: Context): Promise<void> => {
 
   const yamlLines = [
     "free_thresh: 0.196",
-    "negate:0 ",
+    "negate: 0",
     "occupied_thresh: 0.65",
     "image: map.png",
     "origin:",

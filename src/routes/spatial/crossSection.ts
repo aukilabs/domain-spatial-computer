@@ -235,7 +235,7 @@ const crossSection = async (ctx: Context): Promise<void> => {
     "negate: 0",
     "occupied_thresh: 0.65",
     "image: map.png",
-    "origin:",
+    "origin: ",
     `- ${minX.toFixed(3)}`,
     `- ${(-maxY).toFixed(3)}`,
     "- 0",

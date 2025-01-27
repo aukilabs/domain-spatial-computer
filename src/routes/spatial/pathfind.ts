@@ -26,7 +26,7 @@ const pathFind = async (ctx: Context): Promise<void> => {
     if (!domainServerUrl) throw new Error("Missing domain server url");
     if (!domainId) throw new Error("Missing domain id");
     if (!wayPoints) throw new Error("Missing waypoints");
-    if (!radius) throw new Error("Missing radius");
+    //if (!radius) throw new Error("Missing radius");
     if (wayPoints.length < 2) throw new Error("Not enough waypoints");
     //ensure we have an auth token
     if (!authorization) throw new Error("Missing authorization");
@@ -71,7 +71,15 @@ const pathFind = async (ctx: Context): Promise<void> => {
 
   console.log("radius", radius);
   const { success, navMesh } = threeToSoloNavMesh(navmeshQuads, {
-    walkableRadius: radius,
+    walkableRadius: radius ?? 0,
+    cs: 0.05,
+    ch: 0.01,
+    maxSimplificationError: 0.5,
+    minRegionArea: 2,
+    mergeRegionArea: 8,
+    detailSampleDist: 2,
+    detailSampleMaxError: 0.5,
+    maxEdgeLen: 30,
   });
 
   console.log(navMesh?.raw.getNavMesh());
@@ -83,21 +91,71 @@ const pathFind = async (ctx: Context): Promise<void> => {
   }
   const query = new NavMeshQuery(navMesh);
 
-  const path: THREE.Vector3Like[] = [];
-  const paths: THREE.Vector3Like[][] = [];
+  const onPathWaypoints = wayPoints.map((waypoint) => {
+    const closest = query.findClosestPoint(waypoint, {
+      halfExtents: new THREE.Vector3(100, 10, 100),
+    });
+    return {
+      ...closest,
+      originalPoint: waypoint,
+      isOffMesh: !closest.success || !closest.isPointOverPoly,
+    };
+  });
 
-  for (let i = 0; i < wayPoints.length - 1; i++) {
-    const pathResult = query.computePath(wayPoints[i], wayPoints[i + 1]);
+  const path: THREE.Vector3Like[] = [];
+  const paths: Array<{
+    points: THREE.Vector3Like[];
+    hasOffMeshStart: boolean;
+    hasOffMeshEnd: boolean;
+  }> = [];
+
+  for (let i = 0; i < onPathWaypoints.length - 1; i++) {
+    const start = onPathWaypoints[i];
+    const end = onPathWaypoints[i + 1];
+
+    const pathResult = query.computePath(start.point, end.point, {
+      halfExtents: new THREE.Vector3(1000, 10, 1000),
+      maxPathPolys: 1024,
+      maxStraightPathPoints: 1024,
+    });
+
     if (pathResult.success) {
-      if (i == 0) path.push(...pathResult.path);
-      else path.push(...pathResult.path.slice(1));
-      paths.push(pathResult.path);
+      const segmentPoints: THREE.Vector3Like[] = [];
+
+      // Add initial off-mesh segment if needed
+      if (start.isOffMesh) {
+        segmentPoints.push(start.originalPoint);
+      }
+
+      // Add main path
+      segmentPoints.push(...pathResult.path);
+
+      // Add final off-mesh segment if needed
+      if (end.isOffMesh) {
+        segmentPoints.push(end.originalPoint);
+      }
+
+      // Add to full path (avoiding duplicates)
+      if (i === 0) path.push(...segmentPoints);
+      else path.push(...segmentPoints.slice(1));
+
+      paths.push({
+        points: segmentPoints,
+        hasOffMeshStart: start.isOffMesh,
+        hasOffMeshEnd: end.isOffMesh,
+      });
     }
   }
 
-  console.log(path);
-
-  ctx.response.body = { full: path, segments: paths };
+  ctx.response.body = {
+    full: path,
+    segments: paths,
+    waypoints: onPathWaypoints.map((wp) => ({
+      original: wp.originalPoint,
+      adjusted: wp.point,
+      isOffMesh: wp.isOffMesh,
+    })),
+  };
 };
 
 export default pathFind;

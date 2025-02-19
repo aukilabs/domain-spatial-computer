@@ -1,12 +1,9 @@
 import { Context } from "jsr:@oak/oak/context";
-import { fetchDomainDataByNameAndType } from "../../utils/domain/fetchDomainData.ts";
 import { DomainRequestBody } from "../../types/domainRequestBody.ts";
-import { ParseOBJString } from "../../utils/parse/objParser.ts";
-import { SetGeometryFromOBJ } from "../../utils/math/geometry.ts";
 // @deno-types="npm:@types/three"
 import * as THREE from "npm:three";
-import { init, NavMeshQuery } from "npm:@recast-navigation/core";
-import { threeToSoloNavMesh } from "npm:@recast-navigation/three";
+import { NavMeshQuery } from "npm:@recast-navigation/core";
+import { loadNavmesh } from "../../utils/recast/navmesh.ts";
 
 type PathfindingRequest = {
   wayPoints?: { x: number; y: number; z: number }[];
@@ -37,58 +34,19 @@ const pathFind = async (ctx: Context): Promise<void> => {
     return;
   }
 
-  //const recastJS = await recast.default();
-  //const rjs = recastJS;
-
-  let navmesh_obj;
-  try {
-    const navmeshFile = await fetchDomainDataByNameAndType({
-      domainServerUrl,
-      domainId,
-      authorization,
-      dataName: "navmesh_v1",
-      dataType: "obj",
-    });
-
-    navmesh_obj = ParseOBJString(navmeshFile.data);
-  } catch (error) {
-    //@ts-expect-error unknown error type
-    ctx.response.body = { message: error.message };
-    ctx.response.status = 500;
-    return;
-  }
-
-  const navmeshQuads = navmesh_obj.map((obj) => {
-    const obj3d = new THREE.Mesh();
-    obj3d.name = obj.name;
-    obj3d.geometry = new THREE.BufferGeometry();
-    obj3d.material = new THREE.MeshBasicMaterial();
-    SetGeometryFromOBJ(obj, obj3d.geometry);
-    return obj3d;
-  });
-
-  await init();
-
-  console.log("radius", radius);
-  const { success, navMesh } = threeToSoloNavMesh(navmeshQuads, {
-    walkableRadius: radius ?? 0,
-    cs: 0.05,
-    ch: 0.01,
-    maxSimplificationError: 0.5,
-    minRegionArea: 2,
-    mergeRegionArea: 8,
-    detailSampleDist: 2,
-    detailSampleMaxError: 0.5,
-    maxEdgeLen: 30,
-  });
-
-  console.log(navMesh?.raw.getNavMesh());
+  const { success, navMesh } = await loadNavmesh(
+    domainServerUrl,
+    domainId,
+    authorization,
+    radius
+  );
 
   if (!success || !navMesh) {
-    ctx.response.body = { message: "failed to generate" };
+    ctx.response.body = { message: "failed to load navmesh" };
     ctx.response.status = 500;
     return;
   }
+
   const query = new NavMeshQuery(navMesh);
 
   const onPathWaypoints = wayPoints.map((waypoint) => {

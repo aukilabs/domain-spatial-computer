@@ -7,9 +7,9 @@ import { SetGeometryFromOBJ } from "../../utils/math/geometry.ts";
 import * as THREE from "npm:three";
 import { MeshBVH } from "npm:three-mesh-bvh";
 import { encode, ColorType } from "https://deno.land/x/pngs@0.1.1/mod.ts";
-import { BitmapEncoder } from "../../utils/parse/bmpEncoder.ts";
 import { encodeBase64 } from "jsr:@std/encoding@1/base64";
 import { BITMAP } from "../../utils/parse/BITMAP.ts";
+import { encodeBmp } from "../../utils/parse/bmpWriter.ts";
 
 type CrossSectionRequest = {
   height?: number;
@@ -266,11 +266,7 @@ const crossSection = async (ctx: Context): Promise<void> => {
 
   if (fileType === "stcm" || fileType === "bmp") {
     const formData = new FormData();
-    const bmp = new BitmapEncoder({
-      data: img.buffer,
-      width: img.width,
-      height: img.height,
-    }).encode();
+    const bmp = encodeBmp(img);
 
     if (fileType === "bmp") {
       const bmp64 = encodeBase64(bmp);
@@ -291,6 +287,7 @@ const crossSection = async (ctx: Context): Promise<void> => {
 
         Deno.writeTextFileSync(tempYamlPath, yamlString);
         Deno.writeFileSync(tempBmpPath, bmp);
+        //Deno.copyFileSync("./my_map.bmp", tempBmpPath);
 
         //const size = Deno.statSync(tempBmpPath);
         //console.log("bmp size", size);
@@ -326,12 +323,14 @@ const crossSection = async (ctx: Context): Promise<void> => {
           ctx.response.body = formData;
           ctx.response.status = 200;
         } catch (e) {
+          //@ts-expect-error unknown error type
           ctx.response.body = { errorMessage: e.message };
           ctx.response.status = 500;
         } finally {
           Deno.removeSync(tempDir, { recursive: true });
         }
       } catch (e) {
+        //@ts-expect-error unknown error type
         ctx.response.body = { errorMessage: e.message };
         ctx.response.status = 500;
       }

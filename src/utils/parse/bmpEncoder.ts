@@ -1,101 +1,59 @@
+import { BITMAP } from "./BITMAP.ts";
 import { Buffer } from "node:buffer";
 
-class BitmapEncoder {
-  buffer: Buffer;
-  width: number;
-  height: number;
-  extraBytes: number;
-  rgbSize: number;
-  headerInfoSize: number;
-  data: any[];
-  flag: string;
-  reserved: number;
-  offset: number;
-  fileSize: number;
-  planes: number;
-  bitPP: number;
-  compress: number;
-  hr: number;
-  vr: number;
-  colors: number;
-  importantColors: number;
-  pos!: number;
+export function encodeBmp(image: BITMAP) {
+  try {
+    const width = image.width;
+    const height = image.height;
+    const rawData = image.buffer;
 
-  constructor(imgData: any) {
-    this.buffer = imgData.data;
-    this.width = imgData.width;
-    this.height = imgData.height;
-    this.extraBytes = this.width % 4;
-    this.rgbSize = this.height * (3 * this.width + this.extraBytes);
-    this.headerInfoSize = 40;
-    this.data = [];
-    this.flag = "BM";
-    this.reserved = 0;
-    this.offset = 54;
-    this.fileSize = this.rgbSize + this.offset;
-    this.planes = 1;
-    this.bitPP = 24;
-    this.compress = 0;
-    this.hr = 0;
-    this.vr = 0;
-    this.colors = 0;
-    this.importantColors = 0;
-  }
+    // Calculate BMP file structure sizes
+    const rowSize = Math.floor((24 * width + 31) / 32) * 4;
+    const padding = rowSize - width * 3;
+    const headerSize = 54; // 14 (file header) + 40 (DIB header)
+    const pixelDataSize = rowSize * height;
+    const fileSize = headerSize + pixelDataSize;
 
-  encode() {
-    var tempBuffer = new Buffer(this.offset + this.rgbSize);
-    this.pos = 0;
-    tempBuffer.write(this.flag, this.pos, 2);
-    this.pos += 2;
-    tempBuffer.writeUInt32LE(this.fileSize, this.pos);
-    this.pos += 4;
-    tempBuffer.writeUInt32LE(this.reserved, this.pos);
-    this.pos += 4;
-    tempBuffer.writeUInt32LE(this.offset, this.pos);
-    this.pos += 4;
+    // Create and populate BMP buffer
+    const bmp = Buffer.alloc(fileSize);
 
-    tempBuffer.writeUInt32LE(this.headerInfoSize, this.pos);
-    this.pos += 4;
-    tempBuffer.writeUInt32LE(this.width, this.pos);
-    this.pos += 4;
-    tempBuffer.writeInt32LE(-this.height, this.pos);
-    this.pos += 4;
-    tempBuffer.writeUInt16LE(this.planes, this.pos);
-    this.pos += 2;
-    tempBuffer.writeUInt16LE(this.bitPP, this.pos);
-    this.pos += 2;
-    tempBuffer.writeUInt32LE(this.compress, this.pos);
-    this.pos += 4;
-    tempBuffer.writeUInt32LE(this.rgbSize, this.pos);
-    this.pos += 4;
-    tempBuffer.writeUInt32LE(this.hr, this.pos);
-    this.pos += 4;
-    tempBuffer.writeUInt32LE(this.vr, this.pos);
-    this.pos += 4;
-    tempBuffer.writeUInt32LE(this.colors, this.pos);
-    this.pos += 4;
-    tempBuffer.writeUInt32LE(this.importantColors, this.pos);
-    this.pos += 4;
+    // File header (14 bytes)
+    bmp.write("BM", 0); // Signature
+    bmp.writeUInt32LE(fileSize, 2); // File size
+    bmp.writeUInt32LE(0, 6); // Reserved
+    bmp.writeUInt32LE(headerSize, 10); // Pixel data offset
 
-    var i = 0;
-    var rowBytes = 3 * this.width + this.extraBytes;
+    // DIB header (40 bytes)
+    bmp.writeUInt32LE(40, 14); // DIB header size
+    bmp.writeInt32LE(width, 18); // Width
+    bmp.writeInt32LE(height, 22); // Height (positive for bottom-up)
+    bmp.writeUInt16LE(1, 26); // Color planes
+    bmp.writeUInt16LE(24, 28); // Bits per pixel (24 for RGB)
+    bmp.writeUInt32LE(0, 30); // No compression
+    bmp.writeUInt32LE(pixelDataSize, 34); // Image size
+    bmp.writeInt32LE(0, 38); // X pixels per meter
+    bmp.writeInt32LE(0, 42); // Y pixels per meter
+    bmp.writeUInt32LE(0, 46); // Colors in color table
+    bmp.writeUInt32LE(0, 50); // Important colors
 
-    for (var y = 0; y < this.height; y++) {
-      for (var x = 0; x < this.width; x++) {
-        var p = this.pos + y * rowBytes + x * 3;
-        //i++;
-        tempBuffer[p] = this.buffer[i++];
-        tempBuffer[p + 1] = this.buffer[i++];
-        tempBuffer[p + 2] = this.buffer[i++];
+    // Write pixel data (BGR format, bottom-to-top)
+    let offset = headerSize;
+
+    for (let y = height - 1; y >= 0; y--) {
+      for (let x = 0; x < width; x++) {
+        const srcPos = (y * width + x) * 3;
+        bmp[offset++] = rawData[srcPos + 2]; // B
+        bmp[offset++] = rawData[srcPos + 1]; // G
+        bmp[offset++] = rawData[srcPos]; // R
       }
-      if (this.extraBytes > 0) {
-        var fillOffset = this.pos + y * rowBytes + this.width * 3;
-        tempBuffer.fill(0, fillOffset, fillOffset + this.extraBytes);
-      }
+
+      // Add row padding
+      offset += padding;
     }
 
-    return tempBuffer;
+    return bmp;
+  } catch (error) {
+    console.error("Error:", error);
+    throw error;
   }
 }
-
-export { BitmapEncoder };

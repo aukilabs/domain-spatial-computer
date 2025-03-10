@@ -9,7 +9,7 @@ import { MeshBVH } from "npm:three-mesh-bvh";
 import { encode, ColorType } from "https://deno.land/x/pngs@0.1.1/mod.ts";
 import { encodeBase64 } from "jsr:@std/encoding@1/base64";
 import { BITMAP } from "../../utils/parse/BITMAP.ts";
-import { encodeBmp } from "../../utils/parse/bmpWriter.ts";
+import { encodeBmp } from "../../utils/parse/bmpEncoder.ts";
 
 type CrossSectionRequest = {
   height?: number;

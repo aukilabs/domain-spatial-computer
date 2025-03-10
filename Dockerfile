@@ -1,7 +1,11 @@
 FROM denoland/deno:alpine
 EXPOSE 8000
 WORKDIR /app
-USER deno
 ADD . /app
+COPY stcm_creater /app/stcm_creater
+RUN chmod +x /app/stcm_creater
+USER deno
 RUN deno install --entrypoint src/main.ts
-CMD ["run", "--allow-net", "src/main.ts"]
+CMD ["run", "--allow-net", "--allow-run", "--allow-read", "--allow-write", "src/main.ts"]
+
+

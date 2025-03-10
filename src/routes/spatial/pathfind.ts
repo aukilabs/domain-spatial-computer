@@ -11,6 +11,7 @@ type PathfindingRequest = {
 };
 
 const pathFind = async (ctx: Context): Promise<void> => {
+  console.log("pathFind");
   //parse the request body
   const body: DomainRequestBody & PathfindingRequest =
     await ctx.request.body.json();

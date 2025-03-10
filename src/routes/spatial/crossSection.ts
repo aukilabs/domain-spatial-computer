@@ -7,7 +7,9 @@ import { SetGeometryFromOBJ } from "../../utils/math/geometry.ts";
 import * as THREE from "npm:three";
 import { MeshBVH } from "npm:three-mesh-bvh";
 import { encode, ColorType } from "https://deno.land/x/pngs@0.1.1/mod.ts";
+import { BitmapEncoder } from "../../utils/parse/bmpEncoder.ts";
 import { encodeBase64 } from "jsr:@std/encoding@1/base64";
+import { BITMAP } from "../../utils/parse/BITMAP.ts";
 
 type CrossSectionRequest = {
   height?: number;
@@ -20,13 +22,14 @@ type CrossSectionRequest = {
   yAxisColor?: string;
   originColor?: string;
   buffer?: number;
+  fileType?: "png" | "stcm" | "bmp" | string;
 };
 
 const crossSection = async (ctx: Context): Promise<void> => {
   //parse the request body
   const body: DomainRequestBody & CrossSectionRequest =
     await ctx.request.body.json();
-  const { domainServerUrl, domainId, height } = body;
+  const { domainServerUrl, domainId, height, fileType } = body;
   //get auth header
   const authorization = ctx.request.headers.get("Authorization");
   //input guards
@@ -35,6 +38,9 @@ const crossSection = async (ctx: Context): Promise<void> => {
     if (!domainServerUrl) throw new Error("Missing domain server url");
     if (!domainId) throw new Error("Missing domain id");
     if (height === undefined) throw new Error("Missing height");
+    if (fileType === undefined) throw new Error("Missing file type");
+    if (fileType !== "png" && fileType !== "stcm" && fileType !== "bmp")
+      throw new Error("Invalid file type");
     //ensure we have an auth token
     if (!authorization) throw new Error("Missing authorization");
   } catch (error) {
@@ -191,17 +197,17 @@ const crossSection = async (ctx: Context): Promise<void> => {
     Math.ceil(size.y * ppm)
   );
 
-  const png = new PNG(pngSize.x, pngSize.y);
+  const img = new BITMAP(pngSize.x, pngSize.y);
 
   if (showAxes) {
     //red line x axis
-    png.drawLine(0, Math.round(-offset.y * ppm), pngSize.x, 1, xAxisColor);
+    img.drawLine(0, Math.round(-offset.y * ppm), pngSize.x, 1, xAxisColor);
 
     //green line z axis
-    png.drawLine(Math.round(-offset.x * ppm), 0, 1, pngSize.y, yAxisColor);
+    img.drawLine(Math.round(-offset.x * ppm), 0, 1, pngSize.y, yAxisColor);
 
     //yellow point origin
-    png.drawLine(
+    img.drawLine(
       Math.round(-offset.x * ppm),
       Math.round(-offset.y * ppm),
       1,
@@ -225,7 +231,7 @@ const crossSection = async (ctx: Context): Promise<void> => {
         ppm,
         lineColor,
         lineThickness,
-        png
+        img
       );
     }
   });
@@ -234,7 +240,7 @@ const crossSection = async (ctx: Context): Promise<void> => {
     "free_thresh: 0.196",
     "negate: 0",
     "occupied_thresh: 0.65",
-    "image: map.png",
+    `image: map.${fileType == "stcm" ? "bmp" : fileType}`,
     "origin: ",
     `- ${minX.toFixed(3)}`,
     `- ${(-maxY).toFixed(3)}`,
@@ -243,17 +249,94 @@ const crossSection = async (ctx: Context): Promise<void> => {
   ];
 
   const yamlString = yamlLines.join("\n");
-  const encodedPngData = encode(png.buffer, png.width, png.height, {
-    color: ColorType.RGB,
-  });
-  const png64 = encodeBase64(encodedPngData);
+  if (fileType === "png") {
+    const encodedPngData = encode(img.buffer, img.width, img.height, {
+      color: ColorType.RGB,
+    });
+    const png64 = encodeBase64(encodedPngData);
 
-  const formData = new FormData();
-  formData.append("png", png64, "map.png");
-  formData.append("yaml", yamlString, "map.yaml");
+    const formData = new FormData();
+    formData.append("img", png64, "map.png");
+    formData.append("yaml", yamlString, "map.yaml");
 
-  ctx.response.body = formData;
-  ctx.response.status = 200;
+    ctx.response.body = formData;
+    ctx.response.status = 200;
+    return;
+  }
+
+  if (fileType === "stcm" || fileType === "bmp") {
+    const formData = new FormData();
+    const bmp = new BitmapEncoder({
+      data: img.buffer,
+      width: img.width,
+      height: img.height,
+    }).encode();
+
+    if (fileType === "bmp") {
+      const bmp64 = encodeBase64(bmp);
+      formData.append("img", bmp64, "map.bmp");
+      formData.append("yaml", yamlString, "map.yaml");
+
+      ctx.response.body = formData;
+      ctx.response.status = 200;
+      return;
+    }
+
+    if (fileType == "stcm") {
+      const tempDir = Deno.makeTempDirSync();
+      try {
+        const tempYamlPath = `${tempDir}/map.yaml`;
+        const tempBmpPath = `${tempDir}/map.bmp`;
+        const outputPath = `${tempDir}/map.stcm`;
+
+        Deno.writeTextFileSync(tempYamlPath, yamlString);
+        Deno.writeFileSync(tempBmpPath, bmp);
+
+        //const size = Deno.statSync(tempBmpPath);
+        //console.log("bmp size", size);
+
+        const command = new Deno.Command(`./stcm_creater`, {
+          args: ["-f", tempYamlPath, "-o", outputPath],
+          stderr: "piped",
+        });
+
+        try {
+          const process = command.spawn();
+          console.log("process", process);
+          const { success, stderr } = await process.output();
+          console.log("success", success);
+          console.log("stderr", stderr);
+          if (!success) {
+            throw new Error(new TextDecoder().decode(stderr));
+          }
+          console.log("waiting for file to be written");
+          // Wait a small amount to ensure file is written
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
+          console.log("reading file");
+          const size = Deno.statSync(outputPath);
+          console.log("stcm size", size);
+          const stcm = await Deno.readFile(outputPath);
+          console.log("encoding file");
+          const stcm64 = encodeBase64(stcm);
+          console.log("encoding done");
+          formData.append("img", stcm64, "map.stcm");
+          formData.append("yaml", yamlString, "map.yaml");
+
+          ctx.response.body = formData;
+          ctx.response.status = 200;
+        } catch (e) {
+          ctx.response.body = { errorMessage: e.message };
+          ctx.response.status = 500;
+        } finally {
+          Deno.removeSync(tempDir, { recursive: true });
+        }
+      } catch (e) {
+        ctx.response.body = { errorMessage: e.message };
+        ctx.response.status = 500;
+      }
+    }
+  }
 };
 
 function drawLineOnImage(
@@ -263,7 +346,7 @@ function drawLineOnImage(
   ppm: number,
   color: number,
   thickness: number,
-  png: PNG
+  png: BITMAP
 ) {
   const startOffset = start.sub(offset).multiplyScalar(ppm);
   const endOffset = end.sub(offset).multiplyScalar(ppm);
@@ -294,42 +377,5 @@ const hex2rgb = (hex: string) => {
   // return {r, g, b}
   return (1 << 24) | (r << 16) | (g << 8) | b;
 };
-
-class PNG {
-  buffer: Uint8Array;
-  width: number;
-  height: number;
-
-  constructor(width: number, height: number) {
-    this.width = Math.floor(width);
-    this.height = Math.floor(height);
-    this.buffer = new Uint8Array(width * height * 3);
-    this.buffer.fill(0xff);
-  }
-
-  setPixel(x: number, y: number, color: number) {
-    x = Math.floor(x);
-    y = Math.floor(y);
-    const red = (color >> 16) & 0xff;
-    const green = (color >> 8) & 0xff;
-    const blue = color & 0xff;
-    const index = x * 3 + this.width * 3 * y;
-    this.buffer[index] = red;
-    this.buffer[index + 1] = green;
-    this.buffer[index + 2] = blue;
-  }
-
-  drawRect(x1: number, y1: number, x2: number, y2: number, color: number) {
-    this.drawLine(x1, y1, x2 - x1, y2 - y1, color);
-  }
-
-  drawLine(x: number, y: number, width: number, height: number, color: number) {
-    for (let i = 0; i < width; i++) {
-      for (let j = 0; j < height; j++) {
-        this.setPixel(x + i, y + j, color);
-      }
-    }
-  }
-}
 
 export default crossSection;

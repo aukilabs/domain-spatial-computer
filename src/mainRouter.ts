@@ -8,6 +8,7 @@ import restrictToNavmesh from "./routes/spatial/restrictToNavmesh.ts";
 const router = new Router();
 
 router.get("/ping", ({ response }) => {
+  console.log("ping");
   response.body = "pong";
   response.status = 200;
 });

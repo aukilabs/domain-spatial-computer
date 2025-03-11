@@ -15,7 +15,7 @@ jobs:
     with:
       enable_build: true
       image_name: ${{ github.event.repository.name }}
-      runner: ubuntu-24.04-arm
+      runner: ubuntu-latest
       docker_platforms: linux/arm64
     secrets:
       aws_access_key: ${{ secrets.GLOBAL_COMMON_AWS_ACCESS_KEY }}

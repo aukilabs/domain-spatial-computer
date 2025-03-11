@@ -302,9 +302,10 @@ const crossSection = async (ctx: Context): Promise<void> => {
           console.log("process", process);
           const { success, stderr } = await process.output();
           console.log("success", success);
-          console.log("stderr", stderr);
           if (!success) {
-            throw new Error(new TextDecoder().decode(stderr));
+            const error = new TextDecoder().decode(stderr);
+            console.log("stderr", error);
+            throw new Error(error);
           }
           console.log("waiting for file to be written");
           // Wait a small amount to ensure file is written

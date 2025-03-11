@@ -11,10 +11,12 @@ on:
 jobs:
   build:
     name: Build and push
-    uses: aukilabs/github-actions/.github/workflows/javascript-workflow.yml@v2
+    uses: aukilabs/github-actions/.github/workflows/javascript-workflow.yml@feature/multi-arch-javascript-workflow
     with:
       enable_build: true
       image_name: ${{ github.event.repository.name }}
+      runner: ubuntu-24.04-arm
+      docker_platforms: linux/arm64
     secrets:
       aws_access_key: ${{ secrets.GLOBAL_COMMON_AWS_ACCESS_KEY }}
       aws_secret_access_key: ${{ secrets.GLOBAL_COMMON_AWS_SECRET_ACCESS_KEY }}

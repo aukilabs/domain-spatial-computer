@@ -26,6 +26,8 @@ export async function loadNavmesh(
     return { success: false, navMesh: null };
   }
 
+  //console.log("downloaded navmesh");
+
   const navmeshQuads = navmesh_obj.map((obj) => {
     const obj3d = new THREE.Mesh();
     obj3d.name = obj.name;
@@ -35,7 +37,11 @@ export async function loadNavmesh(
     return obj3d;
   });
 
+  //console.log("parsed navmesh");
+
   await init();
+
+  //console.log("initialized recast");
 
   return threeToSoloNavMesh(navmeshQuads, {
     walkableRadius: radius ?? 0,

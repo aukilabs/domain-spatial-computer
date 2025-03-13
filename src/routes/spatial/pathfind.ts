@@ -147,6 +147,7 @@ const pathFind = async (ctx: Context): Promise<void> => {
 
     const unvisited = [...onPathWaypoints];
     const start = unvisited.shift()!;
+    const end = unvisited.pop()!;
 
     let currentPos = start?.point;
 
@@ -190,6 +191,21 @@ const pathFind = async (ctx: Context): Promise<void> => {
       currentPos = nearest.point;
       i++;
     }
+
+    const pathToEnd = query.computePath(currentPos, end.point);
+    const distance = getRouteDistance(pathToEnd.path);
+    optimalRoute.push(end);
+    optimalIndices.push(onPathWaypoints.indexOf(end));
+    addToReturnValue(
+      path,
+      paths,
+      distances,
+      start,
+      end,
+      pathToEnd!.path,
+      distance,
+      i
+    );
 
     //console.log("optimal route complete");
 

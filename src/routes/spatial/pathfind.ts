@@ -143,6 +143,7 @@ const pathFind = async (ctx: Context): Promise<void> => {
 
     // Use Nearest Neighbor algorithm
     const optimalRoute: typeof onPathWaypoints = [];
+    const optimalIndices: number[] = [];
 
     const unvisited = [...onPathWaypoints];
     const start = unvisited.shift()!;
@@ -173,7 +174,7 @@ const pathFind = async (ctx: Context): Promise<void> => {
       // Add the nearest point to our route
       const nearest = unvisited.splice(nearestIdx, 1)[0];
       optimalRoute.push(nearest);
-
+      optimalIndices.push(onPathWaypoints.indexOf(nearest));
       addToReturnValue(
         path,
         paths,
@@ -202,6 +203,7 @@ const pathFind = async (ctx: Context): Promise<void> => {
       })),
       totalDistance: distances.reduce((acc, curr) => acc + curr, 0),
       segmentsDistances: distances,
+      waypointIndices: optimalIndices,
     };
   } else {
     //console.log("begin pathfinding");

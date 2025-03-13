@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     name: Build and push
-    uses: aukilabs/github-actions/.github/workflows/javascript-workflow.yml@feature/multi-arch-javascript-workflow
+    uses: aukilabs/github-actions/.github/workflows/javascript-workflow.yml@v2
     with:
       enable_build: true
       image_name: ${{ github.event.repository.name }}

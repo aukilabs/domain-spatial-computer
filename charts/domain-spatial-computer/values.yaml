@@ -4,6 +4,10 @@ k8s-service:
     tag: latest
     pullPolicy: Always
   applicationName: domain-spatial-computer
+  tolerations:
+    - key: "dedicated"
+      value: "armGroup"
+      effect: "NoSchedule"
   containerPorts:
     http:
       port: 8000
@@ -26,12 +30,3 @@ k8s-service:
       memory: 192Mi
     requests:
       memory: 192Mi
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-        - matchExpressions:
-          - key: kubernetes.io/arch
-            operator: In
-            values:
-            - arm64

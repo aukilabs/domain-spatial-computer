@@ -5,7 +5,7 @@ WORKDIR /app
 ADD . /app
 COPY stcm_creater_${TARGETARCH} /app/stcm_creater
 RUN rm stcm_creater_*
-RUN deno cache src/main.ts
+RUN deno install --entrypoint src/main.ts
 
 # Final image
 FROM denoland/deno:alpine

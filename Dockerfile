@@ -6,9 +6,10 @@ RUN deno cache src/main.ts
 
 # Final image
 FROM denoland/deno:alpine
+ARG TARGETARCH
 WORKDIR /app
 COPY --from=builder /app .
-COPY stcm_creater_$TARGETARCH /app/stcm_creater
+COPY stcm_creater_${TARGETARCH} /app/stcm_creater
 RUN chmod +x /app/stcm_creater
 USER deno
 EXPOSE 8000

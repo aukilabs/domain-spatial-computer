@@ -16,6 +16,8 @@ jobs:
       enable_tag_latest: true
       argocd_host: "argocd.dev.aukiverse.com"
       image_name: ${{ github.event.repository.name }}
+      runner: ubuntu-latest
+      docker_platforms: linux/amd64,linux/arm64
     secrets:
       aws_access_key: ${{ secrets.GLOBAL_COMMON_AWS_ACCESS_KEY }}
       aws_secret_access_key: ${{ secrets.GLOBAL_COMMON_AWS_SECRET_ACCESS_KEY }}

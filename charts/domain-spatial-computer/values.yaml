@@ -4,6 +4,10 @@ k8s-service:
     tag: latest
     pullPolicy: Always
   applicationName: domain-spatial-computer
+  tolerations:
+    - key: "dedicated"
+      value: "armGroup"
+      effect: "NoSchedule"
   containerPorts:
     http:
       port: 8000

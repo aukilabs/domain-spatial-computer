@@ -1,9 +1,9 @@
 import { assertEquals, assert } from "@std/assert";
-import { SetGeometryFromOBJ } from "../../utils/math/geometry.ts";
+import { SetGeometryFromOBJ } from "./geometry.ts";
 // @deno-types="npm:@types/three"
 import * as THREE from "npm:three";
 
-export function TestSetGeometryFromOBJBasic() {
+function TestSetGeometryFromOBJBasic() {
   // Create a simple test OBJ model data (unit cube)
   const testModel = {
     name: "test_cube",
@@ -103,7 +103,7 @@ export function TestSetGeometryFromOBJBasic() {
   geometry.dispose();
 }
 
-export function TestSetGeometryFromOBJEdgeCases() {
+function TestSetGeometryFromOBJEdgeCases() {
   // Test 1: Empty model (no vertices)
   const emptyModel = {
     name: "empty_model",
@@ -342,3 +342,10 @@ export function TestSetGeometryFromOBJEdgeCases() {
   // Clean up
   degenerateGeometry.dispose();
 }
+
+Deno.test(
+  "SetGeometryFromOBJ - basic geometry setup",
+  TestSetGeometryFromOBJBasic
+);
+
+Deno.test("SetGeometryFromOBJ - edge cases", TestSetGeometryFromOBJEdgeCases);

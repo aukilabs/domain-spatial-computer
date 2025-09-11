@@ -1,13 +1,10 @@
 import { assertEquals } from "@std/assert/equals";
 import { Pose } from "../../types/mathTypes.ts";
-import {
-  GetRelativeMatrix,
-  ApplyRelativeMatrixToPose,
-} from "../../utils/math/matrixMath.ts";
+import { GetRelativeMatrix, ApplyRelativeMatrixToPose } from "./matrixMath.ts";
 // @deno-types="npm:@types/three"
 import * as THREE from "npm:three";
 
-export function TestGetRelativeMatrix() {
+function TestGetRelativeMatrix() {
   // Test identity transformation (same pose)
   const identityPose: Pose = {
     position: { x: 0, y: 0, z: 0 },
@@ -138,7 +135,7 @@ export function TestGetRelativeMatrix() {
   );
 }
 
-export function TestGetRelativeMatrixEdgeCases() {
+function TestGetRelativeMatrixEdgeCases() {
   // Test with zero positions
   const zeroPose1: Pose = {
     position: { x: 0, y: 0, z: 0 },
@@ -305,7 +302,7 @@ export function TestGetRelativeMatrixEdgeCases() {
   );
 }
 
-export function TestApplyRelativeMatrixToPose() {
+function TestApplyRelativeMatrixToPose() {
   // Test applying identity matrix
   const identityMatrix = new THREE.Matrix4().identity();
   const testPose: Pose = {
@@ -499,7 +496,7 @@ export function TestApplyRelativeMatrixToPose() {
   );
 }
 
-export function TestApplyRelativeMatrixToPoseEdgeCases() {
+function TestApplyRelativeMatrixToPoseEdgeCases() {
   // Test with zero matrix
   const zeroMatrix = new THREE.Matrix4().set(
     0,
@@ -805,3 +802,15 @@ export function TestApplyRelativeMatrixToPoseEdgeCases() {
     `Small quaternion rotation W should be finite`
   );
 }
+
+Deno.test("GetRelativeMatrix - basic transformation", TestGetRelativeMatrix);
+Deno.test("GetRelativeMatrix - edge cases", TestGetRelativeMatrixEdgeCases);
+Deno.test(
+  "ApplyRelativeMatrixToPose - basic application",
+  TestApplyRelativeMatrixToPose
+);
+
+Deno.test(
+  "ApplyRelativeMatrixToPose - edge cases",
+  TestApplyRelativeMatrixToPoseEdgeCases
+);

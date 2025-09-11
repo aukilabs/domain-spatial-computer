@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert/equals";
-import computePath from "../../utils/recast/computePath.ts";
-import { OnMeshPoint } from "../../utils/recast/getOnMeshPoints.ts";
+import computePath from "./computePath.ts";
+import { OnMeshPoint } from "./getOnMeshPoints.ts";
 // @deno-types="npm:@types/three"
 import * as THREE from "npm:three";
 
@@ -236,3 +236,6 @@ export function TestComputePathEdgeCases() {
     assertEquals(isFinite(point.z), true, "Path point Z should be finite");
   }
 }
+
+Deno.test("computePath - basic pathfinding", TestComputePathBasic);
+Deno.test("computePath - edge cases", TestComputePathEdgeCases);

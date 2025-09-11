@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert/equals";
-import getOnMeshPoints from "../../utils/recast/getOnMeshPoints.ts";
+import getOnMeshPoints from "./getOnMeshPoints.ts";
 // @deno-types="npm:@types/three"
 import * as THREE from "npm:three";
 
@@ -149,3 +149,6 @@ export function TestGetOnMeshPointsEdgeCases() {
     "Negative coordinates should be on-mesh"
   );
 }
+
+Deno.test("getOnMeshPoints - basic point projection", TestGetOnMeshPointsBasic);
+Deno.test("getOnMeshPoints - edge cases", TestGetOnMeshPointsEdgeCases);

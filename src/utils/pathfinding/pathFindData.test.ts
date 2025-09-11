@@ -1,10 +1,10 @@
 import { assertEquals } from "@std/assert/equals";
-import { PathFindData } from "../../utils/pathfinding/pathFindData.ts";
-import { OnMeshPoint } from "../../utils/recast/getOnMeshPoints.ts";
+import { PathFindData } from "./pathFindData.ts";
+import { OnMeshPoint } from "../recast/getOnMeshPoints.ts";
 // @deno-types="npm:@types/three"
 import * as THREE from "npm:three";
 
-export function TestPathFindDataAddSegmentBasic() {
+function TestPathFindDataAddSegmentBasic() {
   const pathFindData = new PathFindData();
 
   // Test adding first segment with on-mesh points
@@ -116,7 +116,7 @@ export function TestPathFindDataAddSegmentBasic() {
   );
 }
 
-export function TestPathFindDataToBody() {
+function TestPathFindDataToBody() {
   const pathFindData = new PathFindData();
 
   // Add some test segments
@@ -177,7 +177,7 @@ export function TestPathFindDataToBody() {
   );
 }
 
-export function TestPathFindDataAddSegmentEdgeCases() {
+function TestPathFindDataAddSegmentEdgeCases() {
   const pathFindData = new PathFindData();
 
   // Test adding segment with zero distance
@@ -298,7 +298,7 @@ export function TestPathFindDataAddSegmentEdgeCases() {
   );
 }
 
-export function TestPathFindDataToBodyEdgeCases() {
+function TestPathFindDataToBodyEdgeCases() {
   // Test with empty path data
   const emptyPathFindData = new PathFindData();
   const emptyBody = emptyPathFindData.toBody();
@@ -378,3 +378,18 @@ export function TestPathFindDataToBodyEdgeCases() {
     "Negative distances should be handled in sum"
   );
 }
+
+Deno.test(
+  "PathFindData.addPathSegment - basic segment addition",
+  TestPathFindDataAddSegmentBasic
+);
+Deno.test(
+  "PathFindData.toBody - basic data transformation",
+  TestPathFindDataToBody
+);
+
+Deno.test(
+  "PathFindData.addPathSegment - edge cases",
+  TestPathFindDataAddSegmentEdgeCases
+);
+Deno.test("PathFindData.toBody - edge cases", TestPathFindDataToBodyEdgeCases);

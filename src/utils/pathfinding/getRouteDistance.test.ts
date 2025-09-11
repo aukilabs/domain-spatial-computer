@@ -1,9 +1,9 @@
 import { assertEquals } from "@std/assert/equals";
-import getRouteDistance from "../../utils/pathfinding/getRouteDistance.ts";
+import getRouteDistance from "./getRouteDistance.ts";
 // @deno-types="npm:@types/three"
 import * as THREE from "npm:three";
 
-export function TestGetRouteDistanceBasic() {
+function TestGetRouteDistanceBasic() {
   // Test simple straight line path
   const straightLinePath: THREE.Vector3Like[] = [
     { x: 0, y: 0, z: 0 },
@@ -80,7 +80,7 @@ export function TestGetRouteDistanceBasic() {
   );
 }
 
-export function TestGetRouteDistanceEdgeCases() {
+function TestGetRouteDistanceEdgeCases() {
   // Test empty path array
   const emptyPath: THREE.Vector3Like[] = [];
   const emptyDistance = getRouteDistance(emptyPath);
@@ -143,3 +143,10 @@ export function TestGetRouteDistanceEdgeCases() {
     `Long path distance should be ~${expectedLongDistance}, got ${longDistance}`
   );
 }
+
+Deno.test(
+  "getRouteDistance - basic path calculation",
+  TestGetRouteDistanceBasic
+);
+
+Deno.test("getRouteDistance - edge cases", TestGetRouteDistanceEdgeCases);

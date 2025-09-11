@@ -228,7 +228,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PathResult'
+                allOf:
+                  - $ref: '#/components/schemas/PathResult'
+                  - type: object
+                    properties:
+                      waypoints:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OnMeshPoint'
         '400':
           description: Invalid request parameters
           content:
@@ -289,7 +296,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PathResult'
+                allOf:
+                  - $ref: '#/components/schemas/PathResult'
+                  - type: object
+                    properties:
+                      waypoints:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OnMeshPoint'
+                      waypointIndices:
+                        type: array
+                        items:
+                          type: integer
         '400':
           description: Invalid request parameters
           content:
@@ -344,7 +362,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RestrictedPoint'
+                type: object
+                properties:
+                  original:
+                    $ref: '#/components/schemas/Vector3'
+                  restricted:
+                    $ref: '#/components/schemas/Vector3'
+                  direction:
+                    $ref: '#/components/schemas/Vector3'
         '400':
           description: Invalid request parameters
           content:
@@ -407,9 +432,30 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RaycastHit'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Success"
+                  data:
+                    type: object
+                    properties:
+                      hits:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            point:
+                              $ref: '#/components/schemas/Vector3'
+                            distance:
+                              type: number
+                              format: float
+                            normal:
+                              $ref: '#/components/schemas/Vector3'
+                            faceIndex:
+                              type: integer
+                            name:
+                              type: string
         '400':
           description: Invalid request parameters
           content:
@@ -425,21 +471,77 @@ paths:
 
   /spatial/crosssection:
     post:
-      summary: Generate cross-section data
-      description: Generate cross-section data for spatial analysis
+      summary: Generate cross-section map data
+      description: Generate cross-section visualization as image and YAML metadata
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              # Add specific properties based on crossSection.ts implementation
+              required:
+                - domainServerUrl
+                - domainId
+                - height
+                - fileType
+              properties:
+                domainServerUrl:
+                  type: string
+                domainId:
+                  type: string
+                height:
+                  type: number
+                  format: float
+                  description: Height at which to take the cross-section
+                fileType:
+                  type: string
+                  enum: [png, bmp, stcm]
+                  description: Output file format
+                pixelsPerMeter:
+                  type: number
+                  minimum: 1
+                  maximum: 200
+                  default: 20
+                includeOrigin:
+                  type: boolean
+                lineThickness:
+                  type: number
+                  default: 1
+                lineColor:
+                  type: string
+                  pattern: '^#[0-9a-fA-F]{6}$'
+                  example: '#000000'
+                showAxes:
+                  type: boolean
+                xAxisColor:
+                  type: string
+                  pattern: '^#[0-9a-fA-F]{6}$'
+                  example: '#ff0000'
+                yAxisColor:
+                  type: string
+                  pattern: '^#[0-9a-fA-F]{6}$'
+                  example: '#00ff00'
+                originColor:
+                  type: string
+                  pattern: '^#[0-9a-fA-F]{6}$'
+                  example: '#ffff00'
+                buffer:
+                  type: number
+                  default: 0
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Cross-section data generated successfully
-        '400':
-          description: Invalid request parameters
           content:
-            application/json:
+            multipart/form-data:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: object
+                properties:
+                  img:
+                    type: string
+                    format: base64
+                    description: Base64 encoded image file (PNG, BMP, or STCM)
+                  yaml:
+                    type: string
+                    description: YAML metadata file content

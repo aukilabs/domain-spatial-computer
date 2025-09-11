@@ -2,6 +2,9 @@
 
 High-performance spatial computing API providing pathfinding, raycasting, and navigation mesh operations for 3D environments.
 
+## Installation
+Install deno - `https://docs.deno.com/runtime/getting_started/installation/`
+
 ## Quick Start
 
 ```bash

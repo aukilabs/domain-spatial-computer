@@ -22,7 +22,8 @@
     "npm:obj-file-parser@*": "0.6.2",
     "npm:path-to-regexp@6.2.1": "6.2.1",
     "npm:three-mesh-bvh@*": "0.8.3_three@0.171.0",
-    "npm:three@*": "0.171.0"
+    "npm:three@*": "0.171.0",
+    "npm:uuid@*": "13.0.0"
   },
   "jsr": {
     "@oak/commons@1.0.0": {
@@ -171,6 +172,9 @@
     },
     "undici-types@6.19.8": {
       "integrity": "sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw=="
+    },
+    "uuid@13.0.0": {
+      "integrity": "sha512-XQegIaBTVUjSHliKqcnFqYypAd4S+WCYt5NIeRs6w/UAry7z8Y9j5ZwRRL4kzq9U3sD6v+85er9FvkEaBpji2w=="
     }
   },
   "redirects": {

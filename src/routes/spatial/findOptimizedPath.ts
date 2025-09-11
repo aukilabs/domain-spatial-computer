@@ -11,13 +11,14 @@ import { EnterDomain } from "../../utils/domain/enterDomain.ts";
 type PathfindingRequest = {
   wayPoints?: { x: number; y: number; z: number }[];
   radius?: number;
+  fixedEnd?: boolean;
 };
 
 export default async function findOptimizedPath(ctx: Context): Promise<void> {
-  //console.log("findOptimizedPath");
+  //console.log("pathFind");
   const body: DomainRequestBody & PathfindingRequest =
     await ctx.request.body.json();
-  const { domainId, wayPoints, radius } = body;
+  const { domainId, wayPoints, radius, fixedEnd } = body;
 
   //input guards
   try {
@@ -56,12 +57,13 @@ export default async function findOptimizedPath(ctx: Context): Promise<void> {
 
   //console.log("begin optimization");
   // Use Nearest Neighbor algorithm
-  const optimalRoute: typeof onMeshWaypoints = [];
-  const optimalIndices: number[] = [];
 
   const unvisited = [...onMeshWaypoints];
   const start = unvisited.shift()!;
-  const end = unvisited.pop()!;
+  const end = fixedEnd ? unvisited.pop()! : undefined;
+
+  const optimalRoute: typeof onMeshWaypoints = [start];
+  const optimalIndices: number[] = [0];
 
   let currentPos = start;
 
@@ -103,11 +105,13 @@ export default async function findOptimizedPath(ctx: Context): Promise<void> {
     i++;
   }
 
-  const pathToEnd = computePath(query, currentPos, end);
-  const distance = getRouteDistance(pathToEnd.path);
-  optimalRoute.push(end);
-  optimalIndices.push(onMeshWaypoints.indexOf(end));
-  returnValue.addPathSegment(start, end, pathToEnd!.path, distance, i);
+  if (end) {
+    const pathToEnd = computePath(query, currentPos, end);
+    const distance = getRouteDistance(pathToEnd.path);
+    optimalRoute.push(end);
+    optimalIndices.push(onMeshWaypoints.indexOf(end));
+    returnValue.addPathSegment(start, end, pathToEnd!.path, distance, i);
+  }
 
   //console.log("optimal route complete");
 

@@ -13,8 +13,7 @@ addSwaggerRoutes(app);
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-console.log("server running on port 8000");
-
 //get port from env
 const port = Number(Deno.env.get("PORT")) || 8000;
+console.log("server running on port", port);
 await app.listen({ port });

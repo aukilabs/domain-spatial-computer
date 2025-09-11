@@ -148,7 +148,6 @@ Deno.test("EnterDomain - error handling", { ignore: true }, () => {
   // Test with network errors
   // Test with invalid credentials
   // Test with malformed responses
-  assertEquals(true, false, "TODO");
 });
 
 Deno.test(
@@ -159,7 +158,6 @@ Deno.test(
     // Test metadata extraction
     // Test raw data retrieval
     // Test authorization handling
-    assertEquals(true, false, "TODO");
   }
 );
 
@@ -171,7 +169,6 @@ Deno.test(
     // Test with invalid data type
     // Test with network errors
     // Test with malformed responses
-    assertEquals(true, false, "TODO");
   }
 );
 
@@ -183,7 +180,6 @@ Deno.test(
     // Test base64 encoding
     // Test authorization header construction
     // Test API URL construction
-    assertEquals(true, false, "TODO");
   }
 );
 
@@ -192,7 +188,6 @@ Deno.test("GetDDSAccessToken - error handling", { ignore: true }, () => {
   // Test with network errors
   // Test with malformed responses
   // Test with missing config
-  assertEquals(true, false, "TODO");
 });
 
 Deno.test("updateDomainData - basic data upload", { ignore: true }, () => {
@@ -200,7 +195,6 @@ Deno.test("updateDomainData - basic data upload", { ignore: true }, () => {
   // Test FormData construction
   // Test authorization handling
   // Test response handling
-  assertEquals(true, false, "TODO");
 });
 
 Deno.test("updateDomainData - error handling", { ignore: true }, () => {
@@ -208,7 +202,6 @@ Deno.test("updateDomainData - error handling", { ignore: true }, () => {
   // Test with network errors
   // Test with malformed responses
   // Test with missing authorization
-  assertEquals(true, false, "TODO");
 });
 
 Deno.test("ReadConfig - basic config reading", { ignore: true }, () => {
@@ -216,14 +209,12 @@ Deno.test("ReadConfig - basic config reading", { ignore: true }, () => {
   // Test UUID generation
   // Test config object structure
   // Test default values
-  assertEquals(true, false, "TODO");
 });
 
 Deno.test("ReadConfig - edge cases", { ignore: true }, () => {
   // TODO: Test with missing environment variables
   // Test with empty environment variables
   // Test UUID uniqueness
-  assertEquals(true, false, "TODO");
 });
 
 // ============================================================================
@@ -235,7 +226,6 @@ Deno.test("findPath input validation - valid inputs", { ignore: true }, () => {
   // Test with valid waypoints
   // Test with valid radius
   // Test with multiple waypoints
-  assertEquals(true, false, "TODO");
 });
 
 Deno.test(
@@ -246,7 +236,6 @@ Deno.test(
     // Test missing waypoints
     // Test insufficient waypoints (< 2)
     // Test malformed waypoint data
-    assertEquals(true, false, "TODO");
   }
 );
 
@@ -257,7 +246,6 @@ Deno.test(
     // TODO: Test with valid inputs
     // Test optimization parameters
     // Test different path types
-    assertEquals(true, false, "TODO");
   }
 );
 
@@ -268,7 +256,6 @@ Deno.test(
     // TODO: Test with invalid inputs
     // Test malformed optimization parameters
     // Test edge cases
-    assertEquals(true, false, "TODO");
   }
 );
 
@@ -281,7 +268,6 @@ Deno.test("Pathfinding integration - end-to-end", { ignore: true }, () => {
   // Test with mock navmesh data
   // Test error propagation
   // Test cleanup operations
-  assertEquals(true, false, "TODO");
 });
 
 Deno.test("Domain data flow integration", { ignore: true }, () => {
@@ -289,7 +275,6 @@ Deno.test("Domain data flow integration", { ignore: true }, () => {
   // Test authentication chain
   // Test data fetching and processing
   // Test error handling chain
-  assertEquals(true, false, "TODO");
 });
 
 // ============================================================================
@@ -301,12 +286,10 @@ Deno.test("Performance - large dataset handling", { ignore: true }, () => {
   // Test with complex navmesh data
   // Test with many waypoints
   // Test memory usage
-  assertEquals(true, false, "TODO");
 });
 
 Deno.test("Performance - matrix operations", { ignore: true }, () => {
   // TODO: Test matrix operations with large datasets
   // Test memory allocation
   // Test computation time
-  assertEquals(true, false, "TODO");
 });

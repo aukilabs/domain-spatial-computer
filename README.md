@@ -1,30 +1,92 @@
-# domain-spatial-computer
+# Domain Spatial Computer
 
-## setup
-1. install deno
-https://docs.deno.com/runtime/getting_started/installation/
+High-performance spatial computing API providing pathfinding, raycasting, and navigation mesh operations for 3D environments.
 
-2. cp .env.example .env
-3. change to desired localhost port
+## Quick Start
 
+```bash
+# Set up environment
+touch .env  # Add required Auki API credentials
 
-3. run the following command to serve:
-deno --allow-read --allow-env --allow-net src/main.ts
+# Run development server
+deno task dev
 
-### for docker 
-docker compose -f docker-compose.yml build
-docker compose up
+# Run tests
+deno task test
+```
 
-### for vscode:
-1. install deno extension
-https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno
+## Environment Configuration
 
-2. Cmd+Shift+P -> Deno: Initialize Workspace Configuration
+Create `.env` file:
 
-## contributing
-1. endpoints go in routes folder and try to match folder structure
-2. add route to ./main.router.ts
+```env
+PORT=8000
+AUKI_API_URL=https://api.auki.network
+AUKI_DDS_URL=https://dds.auki.network
+AUKI_APP_KEY=your_app_key
+AUKI_APP_SECRET=your_app_secret
+```
 
-3. type defs happen locally, shared types put in ./types
+## API Documentation
 
-4. put shared functionality in utils
+- **Swagger UI**: `http://localhost:8000/swagger`
+- **OpenAPI Spec**: `http://localhost:8000/api-docs`
+
+## API Endpoints
+
+**Spatial Operations:**
+- `POST /spatial/findpath` - Find path between waypoints
+- `POST /spatial/findoptimizedpath` - Find optimized path with route optimization  
+- `POST /spatial/restricttonavmesh` - Restrict point to navigation mesh
+- `POST /spatial/raycast` - Perform raycast against occlusion geometry
+- `POST /spatial/crosssection` - Generate 2D cross-section maps
+
+**Utility:**
+- `GET /ping` - Health check
+
+## Testing
+
+```bash
+# Run all tests
+deno test
+
+# Run specific test
+deno test src/utils/math/matrixMath.test.ts
+
+# Coverage
+deno test --coverage=coverage
+deno coverage coverage
+```
+
+Tests are co-located with source files (`.test.ts` extension).
+
+## Docker Deployment
+
+```bash
+# Quick start
+docker compose up --build
+
+# Background
+docker compose up -d --build
+
+# Direct Docker
+docker build -t domain-spatial-computer .
+docker run -p 8000:8000 --env-file .env domain-spatial-computer
+```
+
+## Development
+
+**Available tasks:**
+- `deno task dev` - Start development server  
+- `deno task test` - Run tests
+
+**Adding endpoints:**
+1. Create endpoint in `src/routes/`
+2. Register in `src/mainRouter.ts` 
+3. Update `swagger.yaml`
+
+**Project structure:**
+- `src/routes/` - API endpoints
+- `src/utils/` - Shared utilities  
+- `src/types/` - TypeScript definitions
+- Tests co-located with source files

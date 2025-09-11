@@ -70,8 +70,16 @@ const restrictToNavmesh = async (ctx: Context): Promise<void> => {
 
   ctx.response.body = {
     original: target,
-    restricted: restrictedPoint,
-    direction: direction,
+    restricted: {
+      x: restrictedPoint.x,
+      y: restrictedPoint.y,
+      z: restrictedPoint.z,
+    },
+    direction: {
+      x: direction.x,
+      y: direction.y,
+      z: direction.z,
+    },
   };
 };
 

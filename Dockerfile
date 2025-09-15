@@ -16,4 +16,4 @@ USER deno
 EXPOSE 8000
 ENV DENO_NO_UPDATE_CHECK=1
 ENV DENO_NO_PROMPT=1
-CMD ["run", "--allow-net", "--allow-run", "--allow-read", "--allow-write", "src/main.ts"]
+CMD ["run", "--allow-net", "--allow-run", "--allow-read", "--allow-write", "--allow-env", "src/main.ts"]

@@ -1,9 +1,5 @@
 export async function apiKeyAuth(ctx: any, next: () => Promise<unknown>) {
-  const apiKey =
-    ctx.request.headers.get("x-api-key") ||
-    ctx.request.headers.get("authorization")?.replace("Bearer ", "") ||
-    ctx.request.headers.get("authorization")?.replace("Basic ", "");
-
+  const apiKey = ctx.request.headers.get("x-api-key");
   const validKey = Deno.env.get("DSC_API_KEY");
 
   if (!validKey) {

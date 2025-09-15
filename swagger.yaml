@@ -323,67 +323,60 @@ paths:
   #               type: string
   #               example: pong
 
-  # /spatial/restricttonavmesh:
-  #   post:
-  #     summary: Restrict point to navigation mesh
-  #     description: Projects a target point onto the nearest valid navigation mesh location
-  #     requestBody:
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             type: object
-  #             required:
-  #               - domainServerUrl
-  #               - domainId
-  #               - target
-  #             properties:
-  #               domainServerUrl:
-  #                 type: string
-  #                 description: Domain server URL
-  #               domainId:
-  #                 type: string
-  #                 description: Domain identifier
-  #               target:
-  #                 $ref: '#/components/schemas/Vector3'
-  #                 description: Target point to restrict to navmesh
-  #               radius:
-  #                 type: number
-  #                 format: float
-  #                 description: Minimum distance from original target
-  #             example:
-  #               domainServerUrl: "https://api.example.com"
-  #               domainId: "example-domain"
-  #               target: { x: 5, y: 2, z: 5 }
-  #               radius: 0.5
-  #     security:
-  #       - bearerAuth: []
-  #     responses:
-  #       '200':
-  #         description: Point successfully restricted to navmesh
-  #         content:
-  #           application/json:
-  #             schema:
-  #               type: object
-  #               properties:
-  #                 original:
-  #                   $ref: '#/components/schemas/Vector3'
-  #                 restricted:
-  #                   $ref: '#/components/schemas/Vector3'
-  #                 direction:
-  #                   $ref: '#/components/schemas/Vector3'
-  #       '400':
-  #         description: Invalid request parameters
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
-  #       '500':
-  #         description: Server error
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/ErrorResponse'
+  /spatial/restricttonavmesh:
+    post:
+      summary: Restrict point to navigation mesh
+      description: Projects a target point onto the nearest valid navigation mesh location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - domainId
+                - target
+              properties:
+                domainId:
+                  type: string
+                  description: Domain identifier
+                target:
+                  $ref: '#/components/schemas/Vector3'
+                  description: Target point to restrict to navmesh
+                radius:
+                  type: number
+                  format: float
+                  description: Minimum distance from original target
+              example:
+                domainId: "example-domain"
+                target: { x: 5, y: 2, z: 5 }
+                radius: 0.5
+      responses:
+        '200':
+          description: Point successfully restricted to navmesh
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  original:
+                    $ref: '#/components/schemas/Vector3'
+                  restricted:
+                    $ref: '#/components/schemas/Vector3'
+                  direction:
+                    $ref: '#/components/schemas/Vector3'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # /spatial/raycast:
   #   post:

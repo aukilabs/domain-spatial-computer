@@ -15,7 +15,7 @@ touch .env  # Add required Auki API credentials
 deno task dev
 
 # Run tests
-deno task test
+deno test
 ```
 
 ## Environment Configuration
@@ -56,9 +56,6 @@ deno test
 # Run specific test
 deno test src/utils/math/matrixMath.test.ts
 
-# Coverage
-deno test --coverage=coverage
-deno coverage coverage
 ```
 
 Tests are co-located with source files (`.test.ts` extension).
@@ -81,7 +78,7 @@ docker run -p 8000:8000 --env-file .env domain-spatial-computer
 
 **Available tasks:**
 - `deno task dev` - Start development server  
-- `deno task test` - Run tests
+- `deno test` - Run tests
 
 **Adding endpoints:**
 1. Create endpoint in `src/routes/`

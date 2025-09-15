@@ -16,4 +16,4 @@ app.use(router.allowedMethods());
 //get port from env
 const port = Number(Deno.env.get("PORT")) || 8000;
 console.log("server running on port", port);
-await app.listen({ port });
+await app.listen({ hostname: "0.0.0.0", port });

@@ -62,7 +62,11 @@ Tests are co-located with source files (`.test.ts` extension).
 
 ## Docker Deployment
 
+1. copy docker-compse.yml.example to docker-compose.yml
+2. add app key, app secret, and api key to docker-compose.yml
+
 ```bash
+
 # Quick start
 docker compose up --build
 

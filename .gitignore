@@ -10,4 +10,7 @@ BACKEND_INSTRUCTIONS.md
 garbage.txt
 postman
 
+#docker-compose.yml would have the api keys
+docker-compose.yml
+
 .DS_Store

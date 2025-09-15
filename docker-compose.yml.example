@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    container_name: domain-spatial-computer
+    image: dsc-image
+    ports:
+      - "8000:8000"
+    environment:
+      AUKI_APP_KEY: ""
+      AUKI_APP_SECRET: ""
+      AUKI_API_URL: "https://api.auki.network"
+      AUKI_DDS_URL: "https://dds.auki.network"
+      PORT: "8000"

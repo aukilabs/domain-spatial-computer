@@ -6,6 +6,7 @@ import { ParseOBJString } from "../../utils/parse/objParser.ts";
 import * as THREE from "npm:three";
 import { FlatPose, Pose } from "../../types/mathTypes.ts";
 import { SetGeometryFromOBJ } from "../../utils/math/geometry.ts";
+import { EnterDomain } from "../../utils/domain/enterDomain.ts";
 
 const raycast = async (ctx: Context): Promise<void> => {
   console.log("start raycast");
@@ -15,25 +16,20 @@ const raycast = async (ctx: Context): Promise<void> => {
     const body: DomainRequestBody & {
       ray?: Pose | FlatPose | number[] | number[][];
     } = await ctx.request.body.json();
-    const { domainServerUrl, domainId, ray } = body;
-
-    //get auth header
-    const authorization = ctx.request.headers.get("Authorization");
+    const { domainId, ray } = body;
 
     //input guards
     try {
-      //ensure we have all required body parameters
-      if (!domainServerUrl) throw new Error("Missing domain server url");
       if (!domainId) throw new Error("Missing domain id");
       if (!ray) throw new Error("Missing refinement id");
-      //ensure we have an auth token
-      if (!authorization) throw new Error("Missing authorization");
     } catch (error) {
       ctx.response.status = 400;
       //@ts-expect-error check for .message on unknown
       ctx.response.body = { message: error.message ?? error };
       return;
     }
+
+    const { domainServerUrl, authorization } = await EnterDomain(domainId);
 
     //call the domain data endpoint to get the refinement manifest
     let occlusion_obj;

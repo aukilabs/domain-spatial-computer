@@ -29,10 +29,10 @@ const restrictToNavmesh = async (ctx: Context): Promise<void> => {
     return;
   }
 
-  const { domainServer, authorization } = await EnterDomain(domainId);
+  const { domainServerUrl, authorization } = await EnterDomain(domainId);
 
   const { success, navMesh } = await loadNavmesh(
-    domainServer,
+    domainServerUrl,
     domainId,
     authorization,
     0

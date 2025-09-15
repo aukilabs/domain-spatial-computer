@@ -33,11 +33,11 @@ export default async function findOptimizedPath(ctx: Context): Promise<void> {
   }
 
   //console.log("enter the domain");
-  const { domainServer, authorization } = await EnterDomain(domainId);
+  const { domainServerUrl, authorization } = await EnterDomain(domainId);
 
   //console.log("start navmesh load");
   const { success, navMesh } = await loadNavmesh(
-    domainServer,
+    domainServerUrl,
     domainId,
     authorization,
     radius

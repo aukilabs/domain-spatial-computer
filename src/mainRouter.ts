@@ -19,11 +19,10 @@ router.get("/ping", ({ response }) => {
 router.post("/spatial/findpath", findPath);
 router.post("/spatial/findoptimizedpath", findOptimizedPath);
 router.post("/spatial/restricttonavmesh", restrictToNavmesh);
+router.post("/spatial/raycast", raycast);
+router.post("/spatial/crosssection", crossSection);
 
 //legacy endpoints (acting as auki proxy)
 router.post("/spatial/pathfind", pathFind);
-
-router.post("/spatial/raycast", raycast);
-router.post("/spatial/crosssection", crossSection);
 
 export default router;

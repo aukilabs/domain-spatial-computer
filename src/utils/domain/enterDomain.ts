@@ -22,6 +22,6 @@ export async function EnterDomain(domainId: string) {
   const { access_token, domain_server } = responseBody;
   return {
     authorization: `Bearer ${access_token}`,
-    domainServer: domain_server.url as string,
+    domainServerUrl: domain_server.url as string,
   };
 }

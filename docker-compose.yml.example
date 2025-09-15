@@ -10,4 +10,5 @@ services:
       AUKI_APP_SECRET: ""
       AUKI_API_URL: "https://api.auki.network"
       AUKI_DDS_URL: "https://dds.auki.network"
+      DSC_API_KEY: ""
       PORT: "8000"

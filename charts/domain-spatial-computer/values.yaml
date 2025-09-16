@@ -30,7 +30,10 @@ k8s-service:
       memory: 512Mi
     requests:
       memory: 512Mi
-  env:
+  envVars:
     PORT: "8000"
     AUKI_API_URL: "https://api.auki.network"
     AUKI_DDS_URL: "https://dds.auki.network"
+  secrets:
+    domain-spatial-computer:
+      as: envFrom

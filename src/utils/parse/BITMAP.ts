@@ -6,7 +6,7 @@ export class BITMAP {
   constructor(width: number, height: number) {
     this.width = Math.floor(width);
     this.height = Math.floor(height);
-    this.buffer = new Uint8Array(width * height * 3);
+    this.buffer = new Uint8Array(this.width * this.height * 3);
     this.buffer.fill(0xff);
   }
 

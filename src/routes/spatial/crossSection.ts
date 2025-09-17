@@ -10,6 +10,7 @@ import { encode, ColorType } from "https://deno.land/x/pngs@0.1.1/mod.ts";
 import { encodeBase64 } from "jsr:@std/encoding@1/base64";
 import { BITMAP } from "../../utils/parse/BITMAP.ts";
 import { encodeBmp } from "../../utils/parse/bmpEncoder.ts";
+import { EnterDomain } from "../../utils/domain/enterDomain.ts";
 
 type CrossSectionRequest = {
   height?: number;
@@ -29,20 +30,16 @@ const crossSection = async (ctx: Context): Promise<void> => {
   //parse the request body
   const body: DomainRequestBody & CrossSectionRequest =
     await ctx.request.body.json();
-  const { domainServerUrl, domainId, height, fileType } = body;
-  //get auth header
-  const authorization = ctx.request.headers.get("Authorization");
+  const { domainId, height, fileType } = body;
+
   //input guards
   try {
     //ensure we have all required body parameters
-    if (!domainServerUrl) throw new Error("Missing domain server url");
     if (!domainId) throw new Error("Missing domain id");
     if (height === undefined) throw new Error("Missing height");
     if (fileType === undefined) throw new Error("Missing file type");
     if (fileType !== "png" && fileType !== "stcm" && fileType !== "bmp")
       throw new Error("Invalid file type");
-    //ensure we have an auth token
-    if (!authorization) throw new Error("Missing authorization");
   } catch (error) {
     ctx.response.status = 400;
     //@ts-expect-error check for .message on unknown
@@ -58,6 +55,8 @@ const crossSection = async (ctx: Context): Promise<void> => {
   const lineColor = body.lineColor ? hex2rgb(body.lineColor) : 0x000000;
   const lineThickness = body.lineThickness ?? 1;
   const imgBuffer = body.buffer ?? 0;
+
+  const { domainServerUrl, authorization } = await EnterDomain(domainId);
 
   //call the domain data endpoint to get the refinement manifest
   let occlusion_obj;

@@ -26,30 +26,36 @@ export type ParsedOBJModel = {
 };
 
 export function ParseOBJString(data: string) {
-  const newdata = data.replaceAll("g ", "o ");
-  const output = new OBJFile(newdata).parse() as OBJData;
+  try {
+    const newdata = data.replaceAll("g ", "o ");
+    const output = new OBJFile(newdata).parse() as OBJData;
 
-  let startingIndex = 1;
-  const parsedOutput = output.models
-    .filter((a) => {
-      return a.vertices.length > 0;
-    })
-    .map((model): ParsedOBJModel => {
-      //map vertices
-      const vertices = new Float32Array(
-        model.vertices.flatMap((v) => [v.x, v.y, v.z])
-      );
-      //map indices
-      const indices = new Uint16Array(
-        model.faces.flatMap((f) =>
-          f.vertices.map((v) => v.vertexIndex - startingIndex)
-        )
-      );
+    let startingIndex = 1;
+    const parsedOutput = output.models
+      .filter((a) => {
+        return a.vertices.length > 0;
+      })
+      .map((model): ParsedOBJModel => {
+        //map vertices
+        const vertices = new Float32Array(
+          model.vertices.flatMap((v) => [v.x, v.y, v.z])
+        );
+        //map indices
+        const indices = new Uint16Array(
+          model.faces.flatMap((f) =>
+            f.vertices.map((v) => v.vertexIndex - startingIndex)
+          )
+        );
 
-      //bump up the indices for the next model
-      startingIndex += model.vertices.length;
+        //bump up the indices for the next model
+        startingIndex += model.vertices.length;
 
-      return { name: model.name, indices, vertices };
-    });
-  return parsedOutput;
+        return { name: model.name, indices, vertices };
+      });
+    return parsedOutput;
+  } catch (error) {
+    // Handle unknown error type properly
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to parse OBJ data: ${errorMessage}`);
+  }
 }

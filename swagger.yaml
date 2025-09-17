@@ -1,0 +1,573 @@
+openapi: 3.0.0
+info:
+  title: Domain Spatial Computer API
+  description: API for spatial pathfinding, raycasting, and navigation mesh operations on Auki Posemesh domains
+  version: 1.0.0
+  contact:
+    name: API Support
+servers:
+  - url: http://localhost:8000
+    description: Development server
+
+tags:
+  - name: Spatial
+    description: Spatial computing operations including pathfinding, raycasting, and navigation mesh operations
+
+components:
+  schemas:
+    Vector3:
+      type: object
+      required:
+        - x
+        - y
+        - z
+      properties:
+        x:
+          type: number
+          format: float
+        y:
+          type: number
+          format: float
+        z:
+          type: number
+          format: float
+    
+    Pose:
+      type: object
+      required:
+        - position
+        - rotation
+      properties:
+        position:
+          $ref: '#/components/schemas/Vector3'
+        rotation:
+          type: object
+          required:
+            - x
+            - y
+            - z
+            - w
+          properties:
+            x:
+              type: number
+              format: float
+            y:
+              type: number
+              format: float
+            z:
+              type: number
+              format: float
+            w:
+              type: number
+              format: float
+    
+    FlatPose:
+      type: object
+      required:
+        - px
+        - py
+        - pz
+        - rx
+        - ry
+        - rz
+        - rw
+      properties:
+        px:
+          type: number
+          format: float
+        py:
+          type: number
+          format: float
+        pz:
+          type: number
+          format: float
+        rx:
+          type: number
+          format: float
+        ry:
+          type: number
+          format: float
+        rz:
+          type: number
+          format: float
+        rw:
+          type: number
+          format: float
+    
+    OnMeshPoint:
+      type: object
+      properties:
+        adjusted:
+          $ref: '#/components/schemas/Vector3'
+        original:
+          $ref: '#/components/schemas/Vector3'
+        isOffMesh:
+          type: boolean
+    
+    PathSegment:
+      type: object
+      properties:
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vector3'
+        hasOffMeshStart:
+          type: boolean
+        hasOffMeshEnd:
+          type: boolean
+    
+    PathResult:
+      type: object
+      properties:
+        full:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vector3'
+          description: Complete path as a single array
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PathSegment'
+          description: Path broken down into segments
+        totalDistance:
+          type: number
+          format: float
+          description: Total distance of the path
+        segmentsDistances:
+          type: array
+          items:
+            type: number
+            format: float
+          description: Distance of each segment
+        waypoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/OnMeshPoint'
+          description: Processed waypoints on the navigation mesh
+    
+    RaycastHit:
+      type: object
+      properties:
+        point:
+          $ref: '#/components/schemas/Vector3'
+        distance:
+          type: number
+          format: float
+        object:
+          type: string
+    
+    RestrictedPoint:
+      type: object
+      properties:
+        original:
+          $ref: '#/components/schemas/Vector3'
+        restricted:
+          $ref: '#/components/schemas/Vector3'
+    
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+  
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key for accessing spatial endpoints (set DSC_API_KEY environment variable)
+
+paths:
+  # Keep these two endpoints
+  /spatial/findpath:
+    post:
+      tags:
+        - Spatial
+      summary: Find path between waypoints
+      description: Calculates a path through waypoints using navigation mesh
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - domainId
+                - wayPoints
+              properties:
+                domainId:
+                  type: string
+                  description: Domain identifier
+                domainServerUrl:
+                  type: string
+                  description: Optional domain server URL override
+                wayPoints:
+                  type: array
+                  minItems: 2
+                  items:
+                    $ref: '#/components/schemas/Vector3'
+                  description: Array of waypoints (minimum 2 required)
+                radius:
+                  type: number
+                  format: float
+                  description: Search radius for navigation mesh queries
+            example:
+              domainId: "example-domain"
+              wayPoints:
+                - { x: 0, y: 0, z: 0 }
+                - { x: 10, y: 0, z: 10 }
+              radius: 0.5
+      responses:
+        '200':
+          description: Path found successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PathResult'
+                  - type: object
+                    properties:
+                      waypoints:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OnMeshPoint'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error (e.g., failed to load navmesh)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /spatial/findoptimizedpath:
+    post:
+      tags:
+        - Spatial
+      summary: Find optimized path between waypoints
+      description: Calculates an optimized path through waypoints using navigation mesh
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - domainId
+                - wayPoints
+              properties:
+                domainId:
+                  type: string
+                  description: Domain identifier
+                domainServerUrl:
+                  type: string
+                  description: Optional domain server URL override
+                wayPoints:
+                  type: array
+                  minItems: 2
+                  items:
+                    $ref: '#/components/schemas/Vector3'
+                  description: Array of waypoints (minimum 2 required)
+                radius:
+                  type: number
+                  format: float
+                  description: Search radius for navigation mesh queries
+                fixedEnd:
+                  type: boolean
+                  description: Whether the end point should be fixed during optimization
+            example:
+              domainId: "example-domain"
+              wayPoints:
+                - { x: 0, y: 0, z: 0 }
+                - { x: 5, y: 0, z: 5 }
+                - { x: 10, y: 0, z: 10 }
+              radius: 1.0
+              fixedEnd: true
+      responses:
+        '200':
+          description: Optimized path found successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PathResult'
+                  - type: object
+                    properties:
+                      waypoints:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OnMeshPoint'
+                      waypointIndices:
+                        type: array
+                        items:
+                          type: integer
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Comment out or remove these endpoints:
+  # /ping:
+  #   get:
+  #     summary: Health check endpoint
+  #     responses:
+  #       '200':
+  #         description: Server is healthy
+  #         content:
+  #           text/plain:
+  #             schema:
+  #               type: string
+  #               example: pong
+
+  /spatial/restricttonavmesh:
+    post:
+      tags:
+        - Spatial
+      summary: Restrict point to navigation mesh
+      description: Projects a target point onto the nearest valid navigation mesh location
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - domainId
+                - target
+              properties:
+                domainId:
+                  type: string
+                  description: Domain identifier
+                target:
+                  $ref: '#/components/schemas/Vector3'
+                  description: Target point to restrict to navmesh
+                radius:
+                  type: number
+                  format: float
+                  description: Minimum distance from original target
+              example:
+                domainId: "example-domain"
+                target: { x: 5, y: 2, z: 5 }
+                radius: 0.5
+      responses:
+        '200':
+          description: Point successfully restricted to navmesh
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  original:
+                    $ref: '#/components/schemas/Vector3'
+                  restricted:
+                    $ref: '#/components/schemas/Vector3'
+                  direction:
+                    $ref: '#/components/schemas/Vector3'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /spatial/raycast:
+    post:
+      tags:
+        - Spatial
+      summary: Perform raycast against occlusion mesh
+      description: Cast a ray and find intersections with occlusion geometry
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - domainId
+                - ray
+              properties:
+                domainId:
+                  type: string
+                  description: Domain identifier
+                ray:
+                  oneOf:
+                    - $ref: '#/components/schemas/Pose'
+                    - $ref: '#/components/schemas/FlatPose'
+                    - type: array
+                      items:
+                        type: number
+                      description: Flat array of numbers representing transformation matrix
+                    - type: array
+                      items:
+                        type: array
+                        items:
+                          type: number
+                      description: 2D array representing transformation matrix
+              example:
+                domainId: "example-domain"
+                ray:
+                  position: { x: 0, y: 0, z: 0 }
+                  rotation: { x: 0, y: 0, z: 0, w: 1 }
+      responses:
+        '200':
+          description: Raycast completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Success"
+                  data:
+                    type: object
+                    properties:
+                      hits:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            point:
+                              $ref: '#/components/schemas/Vector3'
+                            distance:
+                              type: number
+                              format: float
+                            normal:
+                              $ref: '#/components/schemas/Vector3'
+                            faceIndex:
+                              type: integer
+                            name:
+                              type: string
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /spatial/crosssection:
+    post:
+      tags:
+        - Spatial
+      summary: Generate cross-section map data
+      description: Generate cross-section visualization as image and YAML metadata
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - domainId
+                - height
+                - fileType
+              properties:
+                domainId:
+                  type: string
+                  description: Domain identifier
+                height:
+                  type: number
+                  format: float
+                  description: Height at which to take the cross-section
+                fileType:
+                  type: string
+                  enum: [png, bmp, stcm]
+                  description: Output file format
+                pixelsPerMeter:
+                  type: number
+                  minimum: 1
+                  maximum: 200
+                  default: 20
+                includeOrigin:
+                  type: boolean
+                lineThickness:
+                  type: number
+                  default: 1
+                lineColor:
+                  type: string
+                  pattern: '^#[0-9a-fA-F]{6}$'
+                  example: '#000000'
+                showAxes:
+                  type: boolean
+                xAxisColor:
+                  type: string
+                  pattern: '^#[0-9a-fA-F]{6}$'
+                  example: '#ff0000'
+                yAxisColor:
+                  type: string
+                  pattern: '^#[0-9a-fA-F]{6}$'
+                  example: '#00ff00'
+                originColor:
+                  type: string
+                  pattern: '^#[0-9a-fA-F]{6}$'
+                  example: '#ffff00'
+                buffer:
+                  type: number
+                  default: 0
+              example:
+                domainId: "example-domain"
+                height: 1.5
+                fileType: "png"
+                pixelsPerMeter: 20
+                showAxes: true
+      responses:
+        '200':
+          description: Cross-section data generated successfully
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  img:
+                    type: string
+                    format: base64
+                    description: Base64 encoded image file (PNG, BMP, or STCM)
+                  yaml:
+                    type: string
+                    description: YAML metadata file content
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

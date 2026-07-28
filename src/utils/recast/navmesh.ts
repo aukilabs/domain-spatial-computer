@@ -1,33 +1,27 @@
 import { init } from "npm:@recast-navigation/core";
 import { fetchDomainDataByNameAndType } from "../domain/fetchDomainData.ts";
 import { SetGeometryFromOBJ } from "../math/geometry.ts";
-import { ParseOBJString } from "../parse/objParser.ts";
+import { ParseOBJString, ParsedOBJModel } from "../parse/objParser.ts";
 import * as THREE from "npm:three";
 import { threeToSoloNavMesh } from "npm:@recast-navigation/three";
 
-export async function loadNavmesh(
+export async function fetchNavmeshObj(
   domainServerUrl: string,
   domainId: string,
-  authorization: string,
-  radius?: number
-) {
-  let navmesh_obj;
-  try {
-    const navmeshFile = await fetchDomainDataByNameAndType({
-      domainServerUrl,
-      domainId,
-      authorization,
-      dataName: "navmesh_v1",
-      dataType: "obj",
-    });
+  authorization: string
+): Promise<ParsedOBJModel[]> {
+  const navmeshFile = await fetchDomainDataByNameAndType({
+    domainServerUrl,
+    domainId,
+    authorization,
+    dataName: "navmesh_v1",
+    dataType: "obj",
+  });
 
-    navmesh_obj = ParseOBJString(navmeshFile.data);
-  } catch (error) {
-    return { success: false, navMesh: null };
-  }
+  return ParseOBJString(navmeshFile.data);
+}
 
-  //console.log("downloaded navmesh");
-
+export async function buildNavMesh(navmesh_obj: ParsedOBJModel[], radius?: number) {
   const navmeshQuads = navmesh_obj.map((obj) => {
     const obj3d = new THREE.Mesh();
     obj3d.name = obj.name;
@@ -37,11 +31,7 @@ export async function loadNavmesh(
     return obj3d;
   });
 
-  //console.log("parsed navmesh");
-
   await init();
-
-  //console.log("initialized recast");
 
   return threeToSoloNavMesh(navmeshQuads, {
     walkableRadius: radius ?? 0,
@@ -54,4 +44,20 @@ export async function loadNavmesh(
     detailSampleMaxError: 0.5,
     maxEdgeLen: 30,
   });
+}
+
+export async function loadNavmesh(
+  domainServerUrl: string,
+  domainId: string,
+  authorization: string,
+  radius?: number
+) {
+  let navmesh_obj;
+  try {
+    navmesh_obj = await fetchNavmeshObj(domainServerUrl, domainId, authorization);
+  } catch (error) {
+    return { success: false, navMesh: null };
+  }
+
+  return buildNavMesh(navmesh_obj, radius);
 }

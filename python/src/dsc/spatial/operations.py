@@ -30,10 +30,12 @@ def _require_domain_id(domain_id: str | None) -> str:
     return domain_id
 
 
-def _load_navmesh(domain_id: str, refresh: bool) -> NavMeshQuery:
+def _load_navmesh(
+    domain_id: str, refresh: bool, radius: float | None = None
+) -> NavMeshQuery:
     try:
         obj_text = get_domain_asset(domain_id, NAVMESH[0], NAVMESH[1], refresh=refresh)
-        return load_navmesh_from_obj(obj_text)
+        return load_navmesh_from_obj(obj_text, radius=radius)
     except Exception as error:
         if str(error) == "failed to load navmesh":
             raise
@@ -56,8 +58,8 @@ def find_path(
     if len(way_points) < 2:
         raise ValueError("Not enough waypoints")
 
-    query = _load_navmesh(domain_id, refresh)
-    on_mesh_points = get_on_mesh_points(query, way_points, radius=radius)
+    query = _load_navmesh(domain_id, refresh, radius=radius)
+    on_mesh_points = get_on_mesh_points(query, way_points)
     result = PathFindData()
     for i in range(len(on_mesh_points) - 1):
         start = on_mesh_points[i]
@@ -82,8 +84,8 @@ def find_optimized_path(
     if len(way_points) < 2:
         raise ValueError("Not enough waypoints")
 
-    query = _load_navmesh(domain_id, refresh)
-    on_mesh_waypoints = get_on_mesh_points(query, way_points, radius=radius)
+    query = _load_navmesh(domain_id, refresh, radius=radius)
+    on_mesh_waypoints = get_on_mesh_points(query, way_points)
     result = PathFindData()
 
     unvisited = list(on_mesh_waypoints)
@@ -138,7 +140,8 @@ def restrict_to_navmesh(
     if not target:
         raise ValueError("Missing target")
 
-    query = _load_navmesh(domain_id, refresh)
+    # Match Deno: bake with walkableRadius 0; radius is min snap distance after.
+    query = _load_navmesh(domain_id, refresh, radius=0)
     closest = query.find_closest_point(target, (100, 10, 100))
     restricted = dict(closest["point"])
     direction = np.array(

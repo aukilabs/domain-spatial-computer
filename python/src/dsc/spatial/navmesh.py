@@ -5,11 +5,15 @@ from typing import Any
 
 import numpy as np
 import trimesh
+from pathfinder.navmesh import Navmesh
+from pathfinder.navmesh_baker import NavmeshBaker
 
 from dsc.parse.obj import ParsedOBJModel, parse_obj_string
 from dsc.types import OnMeshPoint, Vector3
 
 Vec = dict[str, float]
+
+_bake_cache: dict[tuple[int, float], NavMeshQuery] = {}
 
 
 def vec(x: float, y: float, z: float) -> Vector3:
@@ -20,53 +24,114 @@ def as_array(point: Vector3 | Vec) -> np.ndarray:
     return np.array([point["x"], point["y"], point["z"]], dtype=float)
 
 
-def models_to_trimesh(models: list[ParsedOBJModel]) -> trimesh.Trimesh:
-    parts: list[trimesh.Trimesh] = []
-    for model in models:
-        if not model.vertices:
+def _triangle_normal_y(
+    vertices: list[tuple[float, float, float]], a: int, b: int, c: int
+) -> float:
+    ax, ay, az = vertices[a]
+    bx, by, bz = vertices[b]
+    cx, cy, cz = vertices[c]
+    ux, uz = bx - ax, bz - az
+    vx, vz = cx - ax, cz - az
+    return uz * vx - ux * vz
+
+
+def _model_geometry(
+    model: ParsedOBJModel,
+) -> tuple[list[tuple[float, float, float]], list[list[int]]] | None:
+    if not model.vertices or not model.indices:
+        return None
+    vertices = [
+        (float(model.vertices[i]), float(model.vertices[i + 1]), float(model.vertices[i + 2]))
+        for i in range(0, len(model.vertices), 3)
+    ]
+    indices = list(model.indices)
+    polygons: list[list[int]] = []
+    i = 0
+    while i + 2 < len(indices):
+        a, b, c = indices[i], indices[i + 1], indices[i + 2]
+        # Recast only marks upward-facing tris walkable; flip downward faces.
+        if _triangle_normal_y(vertices, a, b, c) < 0:
+            polygons.append([a, c, b])
+        else:
+            polygons.append([a, b, c])
+        i += 3
+    if not polygons:
+        return None
+    return vertices, polygons
+
+
+def _polygons_to_trimesh(
+    vertices: list[tuple[float, float, float]], polygons: list[list[int]]
+) -> trimesh.Trimesh:
+    faces: list[list[int]] = []
+    for polygon in polygons:
+        if len(polygon) < 3:
             continue
-        vertices = np.array(model.vertices, dtype=float).reshape(-1, 3)
-        if not model.indices:
-            continue
-        indices = list(model.indices)
-        faces: list[list[int]] = []
-        i = 0
-        while i + 2 < len(indices):
-            faces.append([indices[i], indices[i + 1], indices[i + 2]])
-            i += 3
-        if not faces:
-            continue
-        parts.append(
-            trimesh.Trimesh(
-                vertices=vertices,
-                faces=np.array(faces, dtype=np.int64),
-                process=False,
-            )
-        )
-    if not parts:
+        for i in range(1, len(polygon) - 1):
+            faces.append([polygon[0], polygon[i], polygon[i + 1]])
+    if not faces:
         raise RuntimeError("failed to load navmesh")
-    if len(parts) == 1:
-        return parts[0]
-    return trimesh.util.concatenate(parts)
+    return trimesh.Trimesh(
+        vertices=np.array(vertices, dtype=float),
+        faces=np.array(faces, dtype=np.int64),
+        process=False,
+    )
 
 
-def _try_pynavmesh(mesh: trimesh.Trimesh):
+def _bake_navmesh(
+    models: list[ParsedOBJModel], agent_radius: float
+) -> tuple[list[tuple[float, float, float]], list[list[int]]]:
+    baker = NavmeshBaker()
+    added = False
+    for model in models:
+        geometry = _model_geometry(model)
+        if geometry is None:
+            continue
+        vertices, polygons = geometry
+        baker.add_geometry(vertices, polygons)
+        added = True
+    if not added:
+        raise RuntimeError("failed to load navmesh")
+
+    # pynavmesh crashes (ZeroDivisionError) when agent_radius == 0.
+    bake_radius = agent_radius if agent_radius > 0 else 1e-6
+
     try:
-        from pathfinder.navmesh import Navmesh
-    except Exception:
-        return None
-    vertices = [tuple(float(c) for c in vertex) for vertex in mesh.vertices]
-    polygons = [list(map(int, face)) for face in mesh.faces]
-    try:
-        return Navmesh(vertices, polygons)
-    except Exception:
-        return None
+        ok = baker.bake(
+            cell_size=0.05,
+            cell_height=0.01,
+            agent_radius=bake_radius,
+            edge_max_error=0.5,
+            edge_max_len=30.0,
+            detail_sample_distance=2.0,
+            detail_sample_maximum_error=0.5,
+            region_min_size=2,
+            region_merge_size=3,
+        )
+    except ZeroDivisionError as error:
+        raise RuntimeError("failed to load navmesh") from error
+    if not ok:
+        raise RuntimeError("failed to load navmesh")
+
+    vertices, polygons = baker.get_polygonization()
+    if not vertices or not polygons:
+        raise RuntimeError("failed to load navmesh")
+    return vertices, polygons
 
 
 class NavMeshQuery:
-    def __init__(self, mesh: trimesh.Trimesh) -> None:
+    def __init__(
+        self,
+        navmesh: Navmesh,
+        mesh: trimesh.Trimesh,
+        *,
+        baked_vertices: list[tuple[float, float, float]] | None = None,
+        baked_polygons: list[list[int]] | None = None,
+    ) -> None:
+        self._pynav = navmesh
         self.mesh = mesh
-        self._pynav = _try_pynavmesh(mesh)
+        self.baked_vertices = baked_vertices or []
+        self.baked_polygons = baked_polygons or []
         self._adjacency = _vertex_adjacency(mesh)
 
     def find_closest_point(
@@ -74,15 +139,12 @@ class NavMeshQuery:
     ) -> dict[str, Any]:
         query = as_array(point)
         snapped: np.ndarray | None = None
-        if self._pynav is not None:
-            sample = getattr(self._pynav, "sample", None)
-            if callable(sample):
-                snapped_raw = sample(
-                    (float(point["x"]), float(point["y"]), float(point["z"])),
-                    True,
-                )
-                if snapped_raw is not None:
-                    snapped = np.array(snapped_raw, dtype=float)
+        snapped_raw = self._pynav.sample(
+            (float(point["x"]), float(point["y"]), float(point["z"])),
+            True,
+        )
+        if snapped_raw is not None:
+            snapped = np.array(snapped_raw, dtype=float)
         if snapped is None:
             closest, _distance, _face_id = trimesh.proximity.closest_point(
                 self.mesh, query.reshape(1, 3)
@@ -110,37 +172,53 @@ class NavMeshQuery:
         max_straight_path_points: int = 1024,
     ) -> dict[str, Any]:
         del half_extents, max_path_polys
-        if self._pynav is not None:
-            search = getattr(self._pynav, "search_path", None)
-            if callable(search):
-                try:
-                    raw = search(
-                        (start["x"], start["y"], start["z"]),
-                        (end["x"], end["y"], end["z"]),
-                    )
-                    path = _coerce_path(raw)
-                    if path:
-                        return {"success": True, "path": path[:max_straight_path_points]}
-                    return {"success": False, "path": []}
-                except Exception:
-                    pass
+        try:
+            raw = self._pynav.search_path(
+                (start["x"], start["y"], start["z"]),
+                (end["x"], end["y"], end["z"]),
+            )
+            path = _coerce_path(raw)
+            if path:
+                return {"success": True, "path": path[:max_straight_path_points]}
+            return {"success": False, "path": []}
+        except Exception:
+            pass
         path = _astar_vertex_path(self.mesh, self._adjacency, start, end)
         if not path:
             return {"success": False, "path": []}
         return {"success": True, "path": path[:max_straight_path_points]}
 
 
-def load_navmesh_from_obj(obj_text: str) -> NavMeshQuery:
+def load_navmesh_from_obj(obj_text: str, radius: float | None = None) -> NavMeshQuery:
+    agent_radius = float(radius or 0)
+    cache_key = (hash(obj_text), agent_radius)
+    cached = _bake_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     models = parse_obj_string(obj_text)
-    mesh = models_to_trimesh(models)
-    return NavMeshQuery(mesh)
+    vertices, polygons = _bake_navmesh(models, agent_radius)
+    mesh = _polygons_to_trimesh(vertices, polygons)
+    navmesh = Navmesh(vertices, polygons)
+    query = NavMeshQuery(
+        navmesh,
+        mesh,
+        baked_vertices=vertices,
+        baked_polygons=polygons,
+    )
+    _bake_cache[cache_key] = query
+    return query
+
+
+def clear_bake_cache() -> None:
+    _bake_cache.clear()
 
 
 def get_on_mesh_points(
     query: NavMeshQuery, points: list[Vector3], radius: float | None = None
 ) -> list[OnMeshPoint]:
-    extent = max(100.0, float(radius or 0))
-    half_extents = (extent, 10.0, extent)
+    del radius
+    half_extents = (100.0, 10.0, 100.0)
     result: list[OnMeshPoint] = []
     for point in points:
         closest = query.find_closest_point(point, half_extents)

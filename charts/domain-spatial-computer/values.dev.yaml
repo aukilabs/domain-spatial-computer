@@ -1,0 +1,11 @@
+k8s-service:
+  envVars:
+    SWAGGER_ENABLED: "true"
+  secrets:
+    swagger-docs:
+      as: environment
+      items:
+        username:
+          envVarName: SWAGGER_BASIC_AUTH_USERNAME
+        password:
+          envVarName: SWAGGER_BASIC_AUTH_PASSWORD

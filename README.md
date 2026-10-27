@@ -134,40 +134,25 @@ docker run -p 8000:8000 --env-file .env domain-spatial-computer
 
 ## Swagger access
 
-Swagger UI, bundled assets, and the OpenAPI JSON schema are disabled by default.
-Production chart values explicitly set `SWAGGER_ENABLED: "false"`.
+Swagger is enabled only by the dev chart values. All dev services use the same
+shared team login from the `swagger-docs` Kubernetes Secret in namespace `default`
+(keys `username` and `password`). Base, staging, and production values disable it.
 
-| Environment variable | Default | Behavior |
-| --- | --- | --- |
-| `SWAGGER_ENABLED` | `false` | Mount documentation routes when `true`. |
-| `SWAGGER_BASIC_AUTH_USERNAME` | unset | Optional HTTP Basic Auth username for all documentation routes. |
-| `SWAGGER_BASIC_AUTH_PASSWORD` | unset | Optional HTTP Basic Auth password. |
+The dev values already map those keys to `SWAGGER_BASIC_AUTH_USERNAME` and
+`SWAGGER_BASIC_AUTH_PASSWORD`, with `SWAGGER_ENABLED: "true"`. Provision the one
+shared Secret before rolling out the updated service images. No per-user accounts
+or separate credentials per service are needed. Rotating the shared login means
+updating that Secret and restarting the dev workloads.
 
-Set both credentials together; incomplete credentials or a username containing
-`:` fail startup validation. If both credentials are omitted, explicitly enabled
-docs are public. Use dedicated documentation credentials over HTTPS in shared
-dev environments. API authentication and health endpoints are independent.
+The Basic Auth check covers the documentation UI, assets, and JSON schema.
+Health routes and normal API authentication are independent. Credentials are not
+stored in Helm values or this repository. Missing Secret keys prevent the dev
+pods from starting instead of silently omitting the configured authentication.
 
-To enable docs behind Basic Auth in dev, provision an existing Kubernetes Secret
-named `swagger-docs` with `username` and `password` keys through the normal secret
-management process, then add these overrides to the dev values:
+For local use, the same environment variables are supported. `SWAGGER_ENABLED`
+defaults to `false`. If enabled without either credential, docs are public;
+configure both for shared use. Partial credentials or a username containing `:`
+fail startup validation.
 
-```yaml
-k8s-service:
-  envVars:
-    SWAGGER_ENABLED: "true"
-  secrets:
-    swagger-docs:
-      as: environment
-      items:
-        username:
-          envVarName: SWAGGER_BASIC_AUTH_USERNAME
-        password:
-          envVarName: SWAGGER_BASIC_AUTH_PASSWORD
-```
-
-Keep credentials out of Helm values and source control. No Secret is created by
-this change. Enabling docs in a deployed environment requires both the updated
-service image and its environment configuration. Production should stay disabled.
-
-The guarded routes are `/swagger` and `/api-docs`.
+The UI is `/swagger` and the schema is `/api-docs`. Dev selects `values.dev.yaml`
+through `domain_spatial_computer_values_file` in `terraform-live`.

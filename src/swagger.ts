@@ -1,14 +1,20 @@
 import { Application } from "jsr:@oak/oak/application";
+import type { Context } from "jsr:@oak/oak/context";
 import { Router } from "jsr:@oak/oak/router";
+import {
+  loadSwaggerConfig,
+  swaggerAuthorized,
+  type SwaggerConfig,
+} from "./swaggerConfig.ts";
 import { parse } from "https://deno.land/std@0.208.0/yaml/mod.ts";
 
-let swaggerSpec: any = null;
+let swaggerSpec: Record<string, unknown> | null = null;
 
 async function loadSwaggerSpec() {
   if (!swaggerSpec) {
     try {
       const yamlContent = await Deno.readTextFile("./swagger.yaml");
-      swaggerSpec = parse(yamlContent);
+      swaggerSpec = parse(yamlContent) as Record<string, unknown>;
     } catch (error) {
       console.error("Failed to load swagger.yaml:", error);
       // Fallback to minimal spec
@@ -33,18 +39,36 @@ async function loadSwaggerSpec() {
   return swaggerSpec;
 }
 
-export function addSwaggerRoutes(app: Application) {
+export function addSwaggerRoutes(
+  app: Application,
+  config: SwaggerConfig = loadSwaggerConfig(),
+) {
+  if (!config.enabled) return;
   const swaggerRouter = new Router();
+  // Attach authentication to each documentation route, including encoded paths.
+  const authorize = async (ctx: Context, next: () => Promise<unknown>) => {
+    ctx.response.headers.set("Cache-Control", "no-store");
+    if (!swaggerAuthorized(config, ctx.request.headers.get("Authorization"))) {
+      ctx.response.status = 401;
+      ctx.response.headers.set(
+        "WWW-Authenticate",
+        'Basic realm="Swagger", charset="UTF-8"',
+      );
+      ctx.response.body = "Unauthorized";
+      return;
+    }
+    await next();
+  };
 
   // Serve the OpenAPI spec JSON
-  swaggerRouter.get("/api-docs", async (ctx) => {
+  swaggerRouter.get("/api-docs", authorize, async (ctx) => {
     const spec = await loadSwaggerSpec();
     ctx.response.headers.set("Content-Type", "application/json");
     ctx.response.body = JSON.stringify(spec, null, 2);
   });
 
   // Serve Swagger UI HTML
-  swaggerRouter.get("/swagger", (ctx) => {
+  swaggerRouter.get("/swagger", authorize, (ctx) => {
     ctx.response.headers.set("Content-Type", "text/html");
     ctx.response.body = `
 <!DOCTYPE html>

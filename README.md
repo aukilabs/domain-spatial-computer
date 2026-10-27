@@ -33,6 +33,8 @@ DSC_API_KEY=your_secure_api_key
 
 ## API Documentation
 
+Documentation routes are disabled by default. See the Swagger access configuration below to enable them.
+
 - **Swagger UI**: `http://localhost:8000/swagger`
 - **OpenAPI Spec**: `http://localhost:8000/api-docs`
 
@@ -129,3 +131,43 @@ docker run -p 8000:8000 --env-file .env domain-spatial-computer
 - `src/utils/` - Shared utilities  
 - `src/types/` - TypeScript definitions
 - Tests co-located with source files
+
+## Swagger access
+
+Swagger UI, bundled assets, and the OpenAPI JSON schema are disabled by default.
+Production chart values explicitly set `SWAGGER_ENABLED: "false"`.
+
+| Environment variable | Default | Behavior |
+| --- | --- | --- |
+| `SWAGGER_ENABLED` | `false` | Mount documentation routes when `true`. |
+| `SWAGGER_BASIC_AUTH_USERNAME` | unset | Optional HTTP Basic Auth username for all documentation routes. |
+| `SWAGGER_BASIC_AUTH_PASSWORD` | unset | Optional HTTP Basic Auth password. |
+
+Set both credentials together; incomplete credentials or a username containing
+`:` fail startup validation. If both credentials are omitted, explicitly enabled
+docs are public. Use dedicated documentation credentials over HTTPS in shared
+dev environments. API authentication and health endpoints are independent.
+
+To enable docs behind Basic Auth in dev, provision an existing Kubernetes Secret
+named `swagger-docs` with `username` and `password` keys through the normal secret
+management process, then add these overrides to the dev values:
+
+```yaml
+k8s-service:
+  envVars:
+    SWAGGER_ENABLED: "true"
+  secrets:
+    swagger-docs:
+      as: environment
+      items:
+        username:
+          envVarName: SWAGGER_BASIC_AUTH_USERNAME
+        password:
+          envVarName: SWAGGER_BASIC_AUTH_PASSWORD
+```
+
+Keep credentials out of Helm values and source control. No Secret is created by
+this change. Enabling docs in a deployed environment requires both the updated
+service image and its environment configuration. Production should stay disabled.
+
+The guarded routes are `/swagger` and `/api-docs`.

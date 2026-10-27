@@ -1,4 +1,6 @@
 k8s-service:
+  envVars:
+    SWAGGER_ENABLED: "false"
   containerImage:
     tag: 8f39790544cb29ac2f1bbd3c030cfe639c9aaa88
   replicaCount: 2

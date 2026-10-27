@@ -31,6 +31,7 @@ k8s-service:
     requests:
       memory: 512Mi
   envVars:
+    SWAGGER_ENABLED: "false"
     PORT: "8000"
     AUKI_API_URL: "https://api.auki.network"
     AUKI_DDS_URL: "https://dds.auki.network"

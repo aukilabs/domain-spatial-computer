@@ -22,9 +22,20 @@ k8s-service:
       alb.ingress.kubernetes.io/group.name: default
       alb.ingress.kubernetes.io/target-type: ip
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/actions.block: |
+        {"type":"fixed-response","fixedResponseConfig":{"contentType":"text/plain","statusCode":"404","messageBody":"Not Found"}}
     path: "/"
     pathType: "Prefix"
     servicePort: "app"
+    additionalPathsHigherPriority:
+      - path: /swagger
+        pathType: Prefix
+        serviceName: block
+        servicePort: use-annotation
+      - path: /api-docs
+        pathType: Prefix
+        serviceName: block
+        servicePort: use-annotation
   containerResources:
     limits:
       memory: 512Mi

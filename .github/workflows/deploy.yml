@@ -22,4 +22,4 @@ jobs:
       aws_access_key: ${{ secrets.GLOBAL_COMMON_AWS_ACCESS_KEY }}
       aws_secret_access_key: ${{ secrets.GLOBAL_COMMON_AWS_SECRET_ACCESS_KEY }}
       aws_region: ${{ secrets.GLOBAL_COMMON_AWS_REGION }}
-      argocd_password: ${{ secrets.GLOBAL_DEV_ARGOCD_PASSWORD }}
+      argocd_token: ${{ secrets.GLOBAL_ARGOCD_TOKEN_AUKI_DEV }}

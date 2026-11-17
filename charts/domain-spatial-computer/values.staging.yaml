@@ -1,3 +1,6 @@
 k8s-service:
   containerImage:
-    tag: 8f39790544cb29ac2f1bbd3c030cfe639c9aaa88
+    tag: 485fc8f97fd74d126905c97bcdc7a13bba590403@sha256:1de2643f982fd2ce3558d01d0cf391c41d09c36f79716b0de94b7f28d4ccc972
+  envVars:
+    AUKI_API_URL: "https://api.staging.aukiverse.com"
+    AUKI_DDS_URL: "https://dds.staging.aukiverse.com"
